@@ -13,56 +13,56 @@ type FeatureCardProps = {
 };
 
 const airportPoints = [
-  { name: '北京首都', left: '63%', top: '30%', level: 'low' as const },
-  { name: '上海虹桥', left: '71%', top: '47%', level: 'mid' as const },
-  { name: '广州白云', left: '61%', top: '68%', level: 'mid' as const },
-  { name: '成都天府', left: '43%', top: '48%', level: 'mid' as const },
-  { name: '昆明长水', left: '36%', top: '66%', level: 'high' as const },
-  { name: '乌鲁木齐地窝堡', left: '19%', top: '24%', level: 'low' as const },
+  { name: '北京首都', left: '67%', top: '37%', level: 'low' as const },
+  { name: '上海虹桥', left: '76%', top: '53%', level: 'mid' as const },
+  { name: '广州白云', left: '62%', top: '71%', level: 'mid' as const },
+  { name: '成都天府', left: '47%', top: '53%', level: 'mid' as const },
+  { name: '昆明长水', left: '40%', top: '69%', level: 'high' as const },
+  { name: '乌鲁木齐地窝堡', left: '24%', top: '32%', level: 'low' as const },
 ];
 
 function FeatureModules() {
   return (
     <section id="modules" className="px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
       <div className="mx-auto max-w-[1680px]">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <div className="section-kicker">功能模块</div>
-            <h2 className="mt-5 text-3xl font-bold leading-tight sm:text-4xl">亮点功能</h2>
+        <div className="value-band">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <div className="section-kicker bg-white/70">亮点功能</div>
+            </div>
+            <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base"></p>
           </div>
-          <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-          </p>
-        </div>
 
-        <div className="mt-10 space-y-6">
-          <FeatureRow
-            id="approach-module"
-            icon={<Activity size={22} />}
-            title="单次进近风扰指数"
-            description="按秒展示一次进近中的风扰指数变化，并结合风向、风速和风险等级，帮助说明局部扰动在过程中的出现位置。"
-            future="秒级曲线 · 悬停提示 · 风向风速联动"
-            actionHref="/approach"
-            actionLabel="进入动态演示"
-            preview={<ApproachPreview />}
-          />
-          <FeatureRow
-            id="airport-module"
-            icon={<MapPin size={22} />}
-            title="机场风扰风险画像"
-            description="在机场尺度汇总风扰指数，用地图和时间趋势展示不同机场的风险差异，便于做横向比较。"
-            future="机场地图 · 趋势观察 · 风险画像"
-            actionHref="/airports"
-            actionLabel="进入机场画像"
-            preview={<AirportPreview />}
-          />
-          <FeatureRow
-            id="analysis-module"
-            icon={<BarChart3 size={22} />}
-            title="运行事件关联与归因分析"
-            description="把风扰指数与降落事件放在同一分析视图中，用于识别重点机场，并辅助讨论可能的影响因素。"
-            future="事件对比 · 象限分析 · 风险归因"
-            preview={<AnalysisPreview />}
-          />
+          <div className="mt-8 space-y-6">
+            <FeatureRow
+              id="approach-module"
+              icon={<Activity size={22} />}
+              title="单次进近风扰指数"
+              description="按秒展示一次进近中的风扰指数变化，并结合风向、风速和风险等级，帮助说明局部扰动在过程中的出现位置。"
+              future="秒级曲线 · 悬停提示 · 风向风速联动"
+              actionHref="/approach"
+              actionLabel="进入动态演示"
+              preview={<ApproachPreview />}
+            />
+            <FeatureRow
+              id="airport-module"
+              icon={<MapPin size={22} />}
+              title="机场风扰风险画像"
+              description="在机场尺度汇总风扰指数，用地图和时间趋势展示不同机场的风险差异，便于做横向比较。"
+              future="机场地图 · 趋势观察 · 风险画像"
+              actionHref="/airports"
+              actionLabel="进入机场画像"
+              preview={<AirportPreview />}
+            />
+            <FeatureRow
+              id="analysis-module"
+              icon={<BarChart3 size={22} />}
+              title="运行事件关联与归因分析"
+              description="把风扰指数与降落事件放在同一分析视图中，用于识别重点机场，并辅助讨论可能的影响因素。"
+              future="事件对比 · 象限分析 · 风险归因"
+              preview={<AnalysisPreview />}
+            />
+          </div>
         </div>
       </div>
     </section>
@@ -125,10 +125,10 @@ function ApproachPreview() {
             strokeWidth="5"
             strokeLinecap="round"
           />
-          <circle cx="234" cy="36" r="7" fill="#b56b4a" />
-          <circle cx="234" cy="36" r="15" fill="#b56b4a" opacity="0.16" />
-          <line x1="234" y1="36" x2="264" y2="22" stroke="#8b5e47" strokeWidth="2" />
-          <polygon points="264,22 257,18 258,27" fill="#8b5e47" />
+          <circle cx="200" cy="92" r="7" fill="#b56b4a" />
+          <circle cx="200" cy="92" r="15" fill="#b56b4a" opacity="0.16" />
+          <line x1="200" y1="92" x2="236" y2="72" stroke="#8b5e47" strokeWidth="2" />
+          <polygon points="236,72 228,69 230,78" fill="#8b5e47" />
         </svg>
 
         <div className="absolute right-2 top-3 w-36 rounded-2xl border border-accent-secondary/20 bg-white/92 p-3 shadow-sm">
