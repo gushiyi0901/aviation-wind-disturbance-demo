@@ -15,39 +15,44 @@ function FlightStatusPanel({ point, fallbackPoint, flight, stage }: FlightStatus
   const tone = riskLevelMeta[displayPoint.riskLevel];
 
   return (
-    <aside className="surface-card p-5 sm:p-6">
-      <div className="section-kicker bg-white/70">当前状态面板</div>
-      <div className="mt-5 flex items-start justify-between gap-4">
+    <aside className="surface-card flex h-full flex-col p-5 sm:p-6">
+      <div className="section-kicker bg-white/70">状态面板</div>
+
+      <div className="mt-5 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold">模拟航班状态</h2>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">动画播放过程中，状态面板会随当前扫描点同步更新。</p>
+          <h2 className="text-xl font-bold sm:text-2xl">模拟航班状态</h2>
+          <div className="mt-1 text-sm text-muted-foreground">进近过程实时摘要</div>
         </div>
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
-          <Plane size={22} />
+        <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+          <Plane size={20} />
         </div>
       </div>
 
-      <div className="mt-6 grid gap-3">
-        <MetricTile label="模拟航班" value={flight} icon={<Plane size={16} />} />
-        <MetricTile label="飞行阶段" value={stage} icon={<Activity size={16} />} />
-        <MetricTile label="当前高度" value={`${displayPoint.altitude} ft`} icon={<Gauge size={16} />} />
-        <MetricTile label="当前风扰指数" value={`${displayPoint.turbulenceIndex}`} icon={<Activity size={16} />} prominent />
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <MetricTile label="航班" value={flight} icon={<Plane size={15} />} />
+        <MetricTile label="阶段" value={stage} icon={<Activity size={15} />} />
+        <MetricTile label="高度" value={`${displayPoint.altitude} ft`} icon={<Gauge size={15} />} />
+        <MetricTile label="风扰指数" value={`${displayPoint.turbulenceIndex}`} icon={<Activity size={15} />} prominent />
       </div>
 
-      <div className="mt-5 rounded-[24px] border border-border/70 bg-white/80 p-4">
+      <div className="mt-4 rounded-[22px] border border-border/70 bg-white/85 p-4">
         <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">当前风险等级</div>
+          <div className="text-sm text-muted-foreground">风险等级</div>
           <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${tone.pillClass}`}>{displayPoint.riskLevel}</span>
         </div>
-        <div className="mt-4 h-2.5 rounded-full bg-[#eee3d4]">
+        <div className="mt-3 h-2.5 rounded-full bg-[#eee3d4]">
           <div className={`h-2.5 rounded-full ${tone.barClass}`} style={{ width: `${displayPoint.turbulenceIndex}%` }} />
         </div>
       </div>
 
-      <div className="mt-5 space-y-3 rounded-[24px] border border-border/70 bg-white/80 p-4">
-        <StatusRow icon={<Wind size={16} className="text-accent" />} label="当前风速" value={`${displayPoint.windSpeed} kt`} />
-        <StatusRow icon={<Navigation size={16} className="text-accent" />} label="当前风向" value={`${displayPoint.windDirection}°`} />
-        <StatusRow icon={<Activity size={16} className="text-accent-secondary" />} label="主要扰动来源" value={displayPoint.factor} />
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <StatusTile icon={<Wind size={15} className="text-accent" />} label="风速" value={`${displayPoint.windSpeed} kt`} />
+        <StatusTile icon={<Navigation size={15} className="text-accent" />} label="风向" value={`${displayPoint.windDirection}°`} />
+      </div>
+
+      <div className="mt-3 rounded-[22px] border border-border/70 bg-white/85 p-3.5">
+        <div className="text-xs text-muted-foreground">主要扰动来源</div>
+        <div className="mt-1.5 text-sm font-semibold text-foreground">{displayPoint.factor}</div>
       </div>
     </aside>
   );
@@ -65,17 +70,17 @@ function MetricTile({
   prominent?: boolean;
 }) {
   return (
-    <div className={`rounded-[22px] border p-4 ${prominent ? 'border-accent/20 bg-accent/10' : 'border-border/70 bg-white/80'}`}>
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    <div className={`rounded-[18px] border p-3.5 ${prominent ? 'border-accent/25 bg-accent/10' : 'border-border/70 bg-white/85'}`}>
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span className="text-accent">{icon}</span>
         {label}
       </div>
-      <div className={`mt-3 font-semibold ${prominent ? 'text-4xl text-accent' : 'text-lg text-foreground'}`}>{value}</div>
+      <div className={`mt-2 font-semibold leading-tight ${prominent ? 'text-2xl text-accent' : 'text-sm text-foreground sm:text-base'}`}>{value}</div>
     </div>
   );
 }
 
-function StatusRow({
+function StatusTile({
   icon,
   label,
   value,
@@ -85,12 +90,12 @@ function StatusRow({
   value: string;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-2xl bg-background/90 px-4 py-3">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    <div className="rounded-[18px] border border-border/70 bg-white/85 px-3.5 py-3">
+      <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
         {icon}
         {label}
       </div>
-      <div className="max-w-[11rem] text-right text-sm font-semibold text-foreground">{value}</div>
+      <div className="mt-2 text-sm font-semibold text-foreground sm:text-base">{value}</div>
     </div>
   );
 }

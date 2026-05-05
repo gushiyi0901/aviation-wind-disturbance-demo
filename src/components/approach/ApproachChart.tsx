@@ -15,9 +15,9 @@ type ChartPoint = ApproachPoint & {
   y: number;
 };
 
-const CHART_WIDTH = 760;
-const CHART_HEIGHT = 360;
-const MARGIN = { top: 28, right: 22, bottom: 50, left: 48 };
+const CHART_WIDTH = 1120;
+const CHART_HEIGHT = 460;
+const MARGIN = { top: 30, right: 30, bottom: 76, left: 92 };
 const ANIMATION_DURATION = 3400;
 
 function ApproachChart({ data, replayToken, onReplay, onCurrentPointChange }: ApproachChartProps) {
@@ -115,7 +115,7 @@ function ApproachChart({ data, replayToken, onReplay, onCurrentPointChange }: Ap
     <section className="surface-card p-5 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="section-kicker bg-white/70">核心曲线</div>
+          <div className="section-kicker bg-white/70">实时曲线</div>
           <h2 className="mt-4 text-2xl font-bold">风扰指数秒级变化曲线</h2>
         </div>
 
@@ -127,7 +127,7 @@ function ApproachChart({ data, replayToken, onReplay, onCurrentPointChange }: Ap
 
       <div className="mt-5 rounded-[28px] border border-border/75 bg-white/80 p-4 sm:p-5">
         <div className="relative">
-          <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} className="h-[360px] w-full">
+          <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} className="h-[420px] w-full sm:h-[460px] xl:h-[520px]">
             {yTicks.map((tick) => {
               const y = MARGIN.top + ((100 - tick) / 100) * (CHART_HEIGHT - MARGIN.top - MARGIN.bottom);
               return (
@@ -164,15 +164,22 @@ function ApproachChart({ data, replayToken, onReplay, onCurrentPointChange }: Ap
             <line x1={MARGIN.left} x2={MARGIN.left} y1={MARGIN.top} y2={CHART_HEIGHT - MARGIN.bottom} stroke="#8b8b7f" strokeWidth="1.4" />
 
             <text
-              x={MARGIN.left - 34}
-              y={MARGIN.top - 4}
-              fontSize="12"
+              x={32}
+              y={(MARGIN.top + CHART_HEIGHT - MARGIN.bottom) / 2}
+              textAnchor="middle"
+              fontSize="13"
               fill="#6d756e"
-              transform={`rotate(-90 ${MARGIN.left - 34} ${MARGIN.top - 4})`}
+              transform={`rotate(-90 32 ${(MARGIN.top + CHART_HEIGHT - MARGIN.bottom) / 2})`}
             >
               风扰指数
             </text>
-            <text x={CHART_WIDTH - MARGIN.right} y={CHART_HEIGHT - 8} textAnchor="end" fontSize="12" fill="#6d756e">
+            <text
+              x={(MARGIN.left + (CHART_WIDTH - MARGIN.right)) / 2}
+              y={CHART_HEIGHT - 16}
+              textAnchor="middle"
+              fontSize="13"
+              fill="#6d756e"
+            >
               进近时间 / 秒
             </text>
 
@@ -249,7 +256,10 @@ function ApproachChart({ data, replayToken, onReplay, onCurrentPointChange }: Ap
           </svg>
 
           {hoverPoint && hoverTone && tooltipStyle && (
-            <div className="pointer-events-none absolute z-20 w-56 rounded-[22px] border border-white/70 bg-white/80 p-4 shadow-soft backdrop-blur-xl" style={tooltipStyle}>
+            <div
+              className="pointer-events-none absolute z-20 w-56 max-w-[calc(100vw-2.5rem)] rounded-[22px] border border-white/70 bg-white/80 p-4 shadow-soft backdrop-blur-xl"
+              style={tooltipStyle}
+            >
               <div className="text-sm font-semibold text-foreground">第 {hoverPoint.time} 秒</div>
               <div className="mt-3 space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center justify-between">

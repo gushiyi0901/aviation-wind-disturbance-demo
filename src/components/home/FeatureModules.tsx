@@ -13,25 +13,24 @@ type FeatureCardProps = {
 };
 
 const airportPoints = [
-  { name: '北京', left: '63%', top: '30%', level: 'low' as const },
-  { name: '上海', left: '71%', top: '47%', level: 'mid' as const },
-  { name: '广州', left: '61%', top: '68%', level: 'mid' as const },
-  { name: '成都', left: '43%', top: '48%', level: 'mid' as const },
-  { name: '昆明', left: '36%', top: '66%', level: 'high' as const },
-  { name: '乌鲁木齐', left: '19%', top: '24%', level: 'low' as const },
+  { name: '北京首都', left: '63%', top: '30%', level: 'low' as const },
+  { name: '上海虹桥', left: '71%', top: '47%', level: 'mid' as const },
+  { name: '广州白云', left: '61%', top: '68%', level: 'mid' as const },
+  { name: '成都天府', left: '43%', top: '48%', level: 'mid' as const },
+  { name: '昆明长水', left: '36%', top: '66%', level: 'high' as const },
+  { name: '乌鲁木齐地窝堡', left: '19%', top: '24%', level: 'low' as const },
 ];
 
 function FeatureModules() {
   return (
     <section id="modules" className="px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-[1680px]">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="section-kicker">功能模块</div>
             <h2 className="mt-5 text-3xl font-bold leading-tight sm:text-4xl">亮点功能</h2>
           </div>
           <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-            先把一次进近怎么看、机场之间怎么比、事件关系怎么解释这三件事讲清楚。
           </p>
         </div>
 
@@ -51,7 +50,9 @@ function FeatureModules() {
             icon={<MapPin size={22} />}
             title="机场风扰风险画像"
             description="在机场尺度汇总风扰指数，用地图和时间趋势展示不同机场的风险差异，便于做横向比较。"
-            future="机场地图 · 时间尺度切换 · 风险画像"
+            future="机场地图 · 趋势观察 · 风险画像"
+            actionHref="/airports"
+            actionLabel="进入机场画像"
             preview={<AirportPreview />}
           />
           <FeatureRow
@@ -199,10 +200,6 @@ function AirportPreview() {
               <div className="flex items-center justify-between">
                 <span>当前指数</span>
                 <span className="font-semibold text-accent-secondary">72</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>时间尺度</span>
-                <span className="font-semibold text-foreground">月度</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>高风险时段</span>
