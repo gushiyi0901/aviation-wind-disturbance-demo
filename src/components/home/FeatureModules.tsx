@@ -60,6 +60,8 @@ function FeatureModules() {
               title="运行事件关联与归因分析"
               description="把风扰指数与降落事件放在同一分析视图中，用于识别重点机场，并辅助讨论可能的影响因素。"
               future="事件对比 · 象限分析 · 风险归因"
+              actionHref="/event-analysis"
+              actionLabel="进入关联分析"
               preview={<AnalysisPreview />}
             />
           </div>

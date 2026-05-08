@@ -8,7 +8,7 @@ const navItems = [
 const featureItems = [
   { label: '单次指数', href: '/approach' },
   { label: '机场画像', href: '/airports' },
-  { label: '事件归因', href: '#analysis-module' },
+  { label: '事件归因', href: '/event-analysis' },
 ];
 
 function Navbar() {
