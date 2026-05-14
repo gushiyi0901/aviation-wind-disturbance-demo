@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { AlertTriangle, Gauge, Navigation, RotateCcw, Wind } from 'lucide-react';
 import type { ApproachPoint } from '../../data/mockApproachData';
 import { riskLevelMeta } from '../../utils/riskLevel';
@@ -13,6 +13,11 @@ type ApproachChartProps = {
 type ChartPoint = ApproachPoint & {
   x: number;
   y: number;
+  confidenceUpper: number;
+  confidenceLower: number;
+  confidenceWidth: number;
+  upperY: number;
+  lowerY: number;
 };
 
 const CHART_WIDTH = 1120;
@@ -25,25 +30,52 @@ function ApproachChart({ data, replayToken, onReplay, onCurrentPointChange }: Ap
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [pathLength, setPathLength] = useState(0);
   const pathRef = useRef<SVGPathElement | null>(null);
+  const clipPathId = useId();
 
-  const { points, pathD, xTicks, yTicks } = useMemo(() => {
+  const { points, pathD, confidenceBandD, xTicks, yTicks } = useMemo(() => {
     const maxTime = data[data.length - 1]?.time ?? 1;
     const innerWidth = CHART_WIDTH - MARGIN.left - MARGIN.right;
     const innerHeight = CHART_HEIGHT - MARGIN.top - MARGIN.bottom;
 
-    const mappedPoints: ChartPoint[] = data.map((point) => ({
-      ...point,
-      x: MARGIN.left + (point.time / maxTime) * innerWidth,
-      y: MARGIN.top + ((100 - point.turbulenceIndex) / 100) * innerHeight,
-    }));
+    const toY = (value: number) => MARGIN.top + ((100 - value) / 100) * innerHeight;
+
+    const mappedPoints: ChartPoint[] = data.map((point, index) => {
+      const start = Math.max(0, index - 4);
+      const recent = data.slice(start, index + 1);
+      const deltas = recent.slice(1).map((item, deltaIndex) => Math.abs(item.turbulenceIndex - recent[deltaIndex].turbulenceIndex));
+      const averageDelta = deltas.length ? deltas.reduce((sum, value) => sum + value, 0) / deltas.length : 0;
+      const range = recent.length
+        ? Math.max(...recent.map((item) => item.turbulenceIndex)) - Math.min(...recent.map((item) => item.turbulenceIndex))
+        : 0;
+      const confidenceWidth = clamp(4 + averageDelta * 0.9 + range * 0.35, 4, 18);
+      const confidenceUpper = clamp(point.turbulenceIndex + confidenceWidth, 0, 100);
+      const confidenceLower = clamp(point.turbulenceIndex - confidenceWidth, 0, 100);
+
+      return {
+        ...point,
+        x: MARGIN.left + (point.time / maxTime) * innerWidth,
+        y: toY(point.turbulenceIndex),
+        confidenceUpper,
+        confidenceLower,
+        confidenceWidth,
+        upperY: toY(confidenceUpper),
+        lowerY: toY(confidenceLower),
+      };
+    });
 
     const d = mappedPoints
       .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+      .join(' ');
+    const upperPath = mappedPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.upperY.toFixed(2)}`).join(' ');
+    const lowerPath = [...mappedPoints]
+      .reverse()
+      .map((point, index) => `${index === 0 ? 'L' : 'L'} ${point.x.toFixed(2)} ${point.lowerY.toFixed(2)}`)
       .join(' ');
 
     return {
       points: mappedPoints,
       pathD: d,
+      confidenceBandD: `${upperPath} ${lowerPath} Z`,
       xTicks: [0, 10, 20, 30, 40, maxTime],
       yTicks: [0, 25, 50, 75, 100],
     };
@@ -91,6 +123,7 @@ function ApproachChart({ data, replayToken, onReplay, onCurrentPointChange }: Ap
   const scanPoint = points[activeIndex];
   const hoverPoint = hoveredIndex !== null ? points[hoveredIndex] : null;
   const hoverTone = hoverPoint ? riskLevelMeta[hoverPoint.riskLevel] : null;
+  const clipWidth = scanPoint ? Math.max(0, scanPoint.x - MARGIN.left) : 0;
   const highRiskIndexes = points
     .map((point, index) => ({ point, index }))
     .filter(({ point }) => point.riskLevel === '偏高' || point.riskLevel === '高')
@@ -183,7 +216,32 @@ function ApproachChart({ data, replayToken, onReplay, onCurrentPointChange }: Ap
               进近时间 / 秒
             </text>
 
-            <path d={pathD} fill="none" stroke="#d8cdbb" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" opacity="0.22" />
+            <defs>
+              <linearGradient id="approachLine" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#587869" />
+                <stop offset="60%" stopColor="#b56b4a" />
+                <stop offset="100%" stopColor="#8d4a47" />
+              </linearGradient>
+              <linearGradient id="approachConfidenceBand" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#b56b4a" stopOpacity="0.2" />
+                <stop offset="100%" stopColor="#587869" stopOpacity="0.08" />
+              </linearGradient>
+              <clipPath id={clipPathId}>
+                <rect x={MARGIN.left} y={MARGIN.top} width={clipWidth} height={CHART_HEIGHT - MARGIN.top - MARGIN.bottom} rx="18" ry="18" />
+              </clipPath>
+            </defs>
+
+            <path d={confidenceBandD} fill="url(#approachConfidenceBand)" stroke="none" clipPath={`url(#${clipPathId})`} />
+            <path
+              d={pathD}
+              fill="none"
+              stroke="#d8cdbb"
+              strokeWidth="7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity="0.22"
+              clipPath={`url(#${clipPathId})`}
+            />
             <path
               ref={pathRef}
               d={pathD}
@@ -198,14 +256,6 @@ function ApproachChart({ data, replayToken, onReplay, onCurrentPointChange }: Ap
                 transition: pathLength ? 'stroke-dashoffset 0.1s linear' : undefined,
               }}
             />
-
-            <defs>
-              <linearGradient id="approachLine" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#587869" />
-                <stop offset="60%" stopColor="#b56b4a" />
-                <stop offset="100%" stopColor="#8d4a47" />
-              </linearGradient>
-            </defs>
 
             {progress > 0 && scanPoint && (
               <>
@@ -274,6 +324,12 @@ function ApproachChart({ data, replayToken, onReplay, onCurrentPointChange }: Ap
                   <span className="font-semibold text-foreground">{hoverPoint.turbulenceIndex}</span>
                 </div>
                 <div className="flex items-center justify-between">
+                  <span>置信区间</span>
+                  <span className="font-semibold text-foreground">
+                    {hoverPoint.confidenceLower.toFixed(0)} - {hoverPoint.confidenceUpper.toFixed(0)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-2">
                     <AlertTriangle size={14} className="text-accent-secondary" />
                     风险等级
@@ -305,3 +361,7 @@ function ApproachChart({ data, replayToken, onReplay, onCurrentPointChange }: Ap
 }
 
 export default ApproachChart;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
