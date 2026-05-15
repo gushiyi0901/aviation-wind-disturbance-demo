@@ -14,7 +14,7 @@ function AirportDetailPanel({ airports, airport, selectedAirportId, onSelect }: 
   const tone = airportRiskMeta[airport.riskLevel];
 
   return (
-    <aside className="surface-card h-fit p-5 sm:p-6">
+    <aside className="surface-card flex h-full flex-col p-5 sm:p-6">
       <div className="section-kicker bg-white/70">机场详情</div>
 
       <div className="mt-5">

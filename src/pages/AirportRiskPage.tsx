@@ -35,7 +35,7 @@ function AirportRiskPage() {
           <h1 className="text-3xl font-bold leading-tight sm:text-4xl lg:text-[3.2rem]">机场风扰风险画像</h1>
         </section>
 
-        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(320px,0.32fr)_minmax(0,0.68fr)]">
+        <section className="mt-6 grid items-stretch gap-6 xl:grid-cols-[minmax(280px,0.27fr)_minmax(0,0.73fr)] 2xl:grid-cols-[minmax(300px,0.25fr)_minmax(0,0.75fr)]">
           <AirportDetailPanel
             airports={airportRiskProfiles}
             airport={selectedAirport}
