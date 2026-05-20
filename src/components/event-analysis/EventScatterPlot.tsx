@@ -12,31 +12,37 @@ type EventScatterPlotProps = {
 const WIDTH = 860;
 const HEIGHT = 520;
 const MARGIN = { top: 32, right: 34, bottom: 74, left: 78 };
+const MIN_INDEX_SPAN = 0.24;
 
 function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatterPlotProps) {
   const [hoveredAirportId, setHoveredAirportId] = useState<string | null>(null);
 
-  const xMin = Math.max(0, Math.min(...airports.map((airport) => airport.averageIndex)) - 0.06);
-  const xMax = Math.min(1, Math.max(...airports.map((airport) => airport.averageIndex)) + 0.06);
+  const indexValues = airports.map((airport) => airport.averageIndex);
+  const rawXMin = Math.min(...indexValues);
+  const rawXMax = Math.max(...indexValues);
+  const rawXCenter = (rawXMin + rawXMax) / 2;
+  const xSpan = Math.max(rawXMax - rawXMin + 0.12, MIN_INDEX_SPAN);
+  const xMin = Math.max(0, rawXCenter - xSpan / 2);
+  const xMax = Math.min(1, rawXCenter + xSpan / 2);
   const yMin = Math.max(0, Math.min(...airports.map((airport) => airport.eventCount)) - 8);
   const yMax = Math.max(...airports.map((airport) => airport.eventCount)) + 8;
   const innerWidth = WIDTH - MARGIN.left - MARGIN.right;
   const innerHeight = HEIGHT - MARGIN.top - MARGIN.bottom;
+  const xScale = (value: number) => MARGIN.left + ((value - xMin) / Math.max(xMax - xMin, 0.001)) * innerWidth;
+  const yScale = (value: number) => HEIGHT - MARGIN.bottom - ((value - yMin) / Math.max(yMax - yMin, 1)) * innerHeight;
 
   const points = useMemo(
     () =>
       airports.map((airport) => ({
         ...airport,
-        x: MARGIN.left + ((airport.averageIndex - xMin) / Math.max(xMax - xMin, 1)) * innerWidth,
-        y: HEIGHT - MARGIN.bottom - ((airport.eventCount - yMin) / Math.max(yMax - yMin, 1)) * innerHeight,
+        x: xScale(airport.averageIndex),
+        y: yScale(airport.eventCount),
       })),
-    [airports, innerHeight, innerWidth, xMax, xMin, yMax, yMin],
+    [airports, xMax, xMin, yMax, yMin],
   );
 
-  const xThreshold =
-    MARGIN.left + ((eventScatterThresholds.averageIndex - xMin) / Math.max(xMax - xMin, 1)) * innerWidth;
-  const yThreshold =
-    HEIGHT - MARGIN.bottom - ((eventScatterThresholds.eventCount - yMin) / Math.max(yMax - yMin, 1)) * innerHeight;
+  const xThreshold = xScale(eventScatterThresholds.averageIndex);
+  const yThreshold = yScale(eventScatterThresholds.eventCount);
 
   const hoveredPoint = points.find((point) => point.id === hoveredAirportId) ?? null;
   const tooltipStyle: CSSProperties | undefined = hoveredPoint
@@ -75,14 +81,14 @@ function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatte
               <g key={tick}>
                 <line x1={MARGIN.left} x2={WIDTH - MARGIN.right} y1={y} y2={y} stroke="#d8cdbb" strokeDasharray="4 6" />
                 <text x={MARGIN.left - 16} y={y + 4} textAnchor="end" fontSize="12" fill="#6d756e">
-                  {tick.toFixed(2)}
+                  {tick}
                 </text>
               </g>
             );
           })}
 
           {xTicks.map((tick) => {
-            const x = MARGIN.left + ((tick - xMin) / Math.max(xMax - xMin, 1)) * innerWidth;
+            const x = xScale(tick);
             return (
               <g key={tick}>
                 <line x1={x} x2={x} y1={MARGIN.top} y2={HEIGHT - MARGIN.bottom} stroke="#ece2d4" />
