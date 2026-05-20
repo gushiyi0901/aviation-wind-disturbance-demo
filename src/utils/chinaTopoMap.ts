@@ -41,10 +41,10 @@ type ProjectedPoint = {
 };
 
 type MapBounds = {
-  minLongitude: number;
-  maxLongitude: number;
-  minLatitude: number;
-  maxLatitude: number;
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
 };
 
 type ProjectionBox = {
@@ -58,7 +58,7 @@ type ProjectionBox = {
 const topology = chinaTopoJson as unknown as ChinaTopology;
 const decodedArcs = topology.arcs.map((arc) => decodeArc(arc, topology.transform));
 const MAP_VIEWBOX_WIDTH = 1000;
-const MAP_VIEWBOX_HEIGHT = 700;
+const MAP_VIEWBOX_HEIGHT = 760;
 
 export const CHINA_TOPO_SOURCE_URL = 'https://geojson.cn/api/china/1.6.3/china.topo.json';
 export const CHINA_TOPO_DOCS_URL = 'https://geojson.cn/api/china/100000.topo.json';
@@ -77,15 +77,15 @@ const insetGeometries = polygonGeometries.filter((geometry) => geometry.properti
 const mainlandBounds = measureGeometryBounds(mainlandGeometries);
 const insetBounds = measureGeometryBounds(insetGeometries);
 const mainlandProjection = createProjection(mainlandBounds, {
-  x: 22,
-  y: 24,
-  width: 936,
-  height: 586,
+  x: 58,
+  y: 28,
+  width: 872,
+  height: 650,
   padding: 18,
 });
 const insetProjection = createProjection(insetBounds, {
   x: 764,
-  y: 472,
+  y: 528,
   width: 184,
   height: 164,
   padding: 14,
@@ -95,6 +95,14 @@ export const chinaMapViewBox = {
   width: MAP_VIEWBOX_WIDTH,
   height: MAP_VIEWBOX_HEIGHT,
 };
+
+const southChinaSeaGeometry = polygonGeometries.find((geometry) => geometry.properties?.name === '南海诸岛') ?? null;
+const southChinaSeaFrameIndex = southChinaSeaGeometry ? findInsetFramePolygonIndex(southChinaSeaGeometry) : -1;
+
+export const southChinaSeaInsetFrame =
+  southChinaSeaGeometry && southChinaSeaFrameIndex >= 0
+    ? measureProjectedPolygonBounds((southChinaSeaGeometry.arcs as number[][][])[southChinaSeaFrameIndex][0], insetProjection)
+    : null;
 
 export const provincePaths = polygonGeometries
   .filter((geometry) => geometry.properties?.level === 1)
@@ -108,13 +116,24 @@ export const provincePaths = polygonGeometries
 
 export const insetIslandPaths = polygonGeometries
   .filter((geometry) => geometry.properties?.level !== 1)
-  .map((geometry, index) => ({
-    key: geometry.properties?.code ?? `inset-${index}`,
-    path:
-      geometry.type === 'Polygon'
-        ? buildPolygonPath(geometry.arcs as number[][], insetProjection)
-        : buildMultiPolygonPath(geometry.arcs as number[][][], insetProjection),
-  }));
+  .flatMap((geometry, index) => {
+    if (geometry.type === 'Polygon') {
+      return [
+        {
+          key: geometry.properties?.code ?? `inset-${index}`,
+          path: buildPolygonPath(geometry.arcs as number[][], insetProjection),
+        },
+      ];
+    }
+
+    const polygons = geometry.arcs as number[][][];
+    return polygons
+      .filter((_, polygonIndex) => !(geometry.properties?.name === '南海诸岛' && polygonIndex === southChinaSeaFrameIndex))
+      .map((polygon, polygonIndex) => ({
+        key: `${geometry.properties?.code ?? `inset-${index}`}-${polygonIndex}`,
+        path: buildPolygonPath(polygon, insetProjection),
+      }));
+  });
 
 export const dashLinePaths = lineGeometries.map((geometry, index) => ({
   key: geometry.properties?.code ?? `dash-${index}`,
@@ -142,29 +161,30 @@ function decodeArc(arc: Position[], transform: TopologyTransform): Position[] {
 }
 
 function measureGeometryBounds(geometries: TopologyGeometry[]) {
-  let minLongitude = Number.POSITIVE_INFINITY;
-  let maxLongitude = Number.NEGATIVE_INFINITY;
-  let minLatitude = Number.POSITIVE_INFINITY;
-  let maxLatitude = Number.NEGATIVE_INFINITY;
+  let minX = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
 
   geometries.forEach((geometry) => {
     const arcGroups = flattenArcReferences(geometry.arcs);
 
     arcGroups.forEach((arcReferences) => {
       stitchArcReferences(arcReferences, ([longitude, latitude]) => ({ x: longitude, y: latitude })).forEach(({ x, y }) => {
-        minLongitude = Math.min(minLongitude, x);
-        maxLongitude = Math.max(maxLongitude, x);
-        minLatitude = Math.min(minLatitude, y);
-        maxLatitude = Math.max(maxLatitude, y);
+        const planarPoint = projectChinaConic([x, y]);
+        minX = Math.min(minX, planarPoint.x);
+        maxX = Math.max(maxX, planarPoint.x);
+        minY = Math.min(minY, planarPoint.y);
+        maxY = Math.max(maxY, planarPoint.y);
       });
     });
   });
 
   return {
-    minLongitude,
-    maxLongitude,
-    minLatitude,
-    maxLatitude,
+    minX,
+    maxX,
+    minY,
+    maxY,
   };
 }
 
@@ -234,21 +254,113 @@ function stitchArcReferences<T>(arcReferences: number[], mapPoint: (position: Po
   return mergedPoints;
 }
 
+function findInsetFramePolygonIndex(geometry: TopologyGeometry) {
+  if (geometry.type !== 'MultiPolygon') {
+    return -1;
+  }
+
+  let maxArea = Number.NEGATIVE_INFINITY;
+  let frameIndex = -1;
+
+  (geometry.arcs as number[][][]).forEach((polygon, polygonIndex) => {
+    const bounds = measureReferenceBounds(polygon[0]);
+    const area = bounds.width * bounds.height;
+    if (area > maxArea) {
+      maxArea = area;
+      frameIndex = polygonIndex;
+    }
+  });
+
+  return frameIndex;
+}
+
+function measureReferenceBounds(arcReferences: number[]) {
+  const points = stitchArcReferences(arcReferences, ([longitude, latitude]) => ({ x: longitude, y: latitude }));
+  let minX = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+
+  points.forEach(({ x, y }) => {
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
+  });
+
+  return {
+    minX,
+    maxX,
+    minY,
+    maxY,
+    width: maxX - minX,
+    height: maxY - minY,
+  };
+}
+
+function measureProjectedPolygonBounds(arcReferences: number[], projection: (position: Position) => ProjectedPoint) {
+  const points = stitchArcReferences(arcReferences, projection);
+  let minX = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+
+  points.forEach(({ x, y }) => {
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
+  });
+
+  return {
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY,
+  };
+}
+
 function createProjection(bounds: MapBounds, box: ProjectionBox) {
   const innerWidth = box.width - box.padding * 2;
   const innerHeight = box.height - box.padding * 2;
-  const longitudeSpan = Math.max(bounds.maxLongitude - bounds.minLongitude, 0.001);
-  const latitudeSpan = Math.max(bounds.maxLatitude - bounds.minLatitude, 0.001);
-  const scale = Math.min(innerWidth / longitudeSpan, innerHeight / latitudeSpan);
-  const projectedWidth = longitudeSpan * scale;
-  const projectedHeight = latitudeSpan * scale;
+  const planarWidth = Math.max(bounds.maxX - bounds.minX, 0.001);
+  const planarHeight = Math.max(bounds.maxY - bounds.minY, 0.001);
+  const scale = Math.min(innerWidth / planarWidth, innerHeight / planarHeight);
+  const projectedWidth = planarWidth * scale;
+  const projectedHeight = planarHeight * scale;
   const offsetX = box.x + box.padding + (innerWidth - projectedWidth) / 2;
   const offsetY = box.y + box.padding + (innerHeight - projectedHeight) / 2;
 
-  return ([longitude, latitude]: Position): ProjectedPoint => ({
-    x: offsetX + (longitude - bounds.minLongitude) * scale,
-    y: offsetY + (bounds.maxLatitude - latitude) * scale,
-  });
+  return ([longitude, latitude]: Position): ProjectedPoint => {
+    const planarPoint = projectChinaConic([longitude, latitude]);
+    return {
+      x: offsetX + (planarPoint.x - bounds.minX) * scale,
+      y: offsetY + (bounds.maxY - planarPoint.y) * scale,
+    };
+  };
+}
+
+function projectChinaConic([longitude, latitude]: Position): ProjectedPoint {
+  const radians = Math.PI / 180;
+  const lambda = longitude * radians;
+  const phi = latitude * radians;
+  const lambda0 = 105 * radians;
+  const phi0 = 35 * radians;
+  const phi1 = 25 * radians;
+  const phi2 = 47 * radians;
+
+  const n =
+    Math.log(Math.cos(phi1) / Math.cos(phi2)) /
+    Math.log(Math.tan(Math.PI / 4 + phi2 / 2) / Math.tan(Math.PI / 4 + phi1 / 2));
+  const f = (Math.cos(phi1) * Math.pow(Math.tan(Math.PI / 4 + phi1 / 2), n)) / n;
+  const rho = f / Math.pow(Math.tan(Math.PI / 4 + phi / 2), n);
+  const rho0 = f / Math.pow(Math.tan(Math.PI / 4 + phi0 / 2), n);
+  const theta = n * (lambda - lambda0);
+
+  return {
+    x: rho * Math.sin(theta),
+    y: rho0 - rho * Math.cos(theta),
+  };
 }
 
 function wgs84ToGcj02(longitude: number, latitude: number): Position {

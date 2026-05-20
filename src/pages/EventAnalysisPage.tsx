@@ -1,12 +1,16 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, LogOut } from 'lucide-react';
 import EventAttributionPanel from '../components/event-analysis/EventAttributionPanel';
 import EventFocusList from '../components/event-analysis/EventFocusList';
 import EventScatterPlot from '../components/event-analysis/EventScatterPlot';
 import EventSummaryPanel from '../components/event-analysis/EventSummaryPanel';
 import { defaultEventAirportId, eventAnalysisAirports } from '../data/mockEventAnalysisData';
 
-function EventAnalysisPage() {
+type EventAnalysisPageProps = {
+  onLogout: () => void;
+};
+
+function EventAnalysisPage({ onLogout }: EventAnalysisPageProps) {
   const [selectedAirportId, setSelectedAirportId] = useState(defaultEventAirportId);
 
   const selectedAirport = useMemo(
@@ -23,10 +27,16 @@ function EventAnalysisPage() {
 
         <div className="text-sm font-semibold text-foreground sm:text-base">运行事件关联与归因分析</div>
 
-        <a href="/" className="action-secondary">
-          <ArrowLeft size={16} />
-          返回首页
-        </a>
+        <div className="flex flex-wrap items-center justify-center gap-2 md:justify-end">
+          <a href="/" className="action-secondary">
+            <ArrowLeft size={16} />
+            返回首页
+          </a>
+          <button type="button" onClick={onLogout} className="action-secondary">
+            <LogOut size={16} />
+            退出登录
+          </button>
+        </div>
       </header>
 
       <main className="mx-auto mt-8 max-w-[1680px]">

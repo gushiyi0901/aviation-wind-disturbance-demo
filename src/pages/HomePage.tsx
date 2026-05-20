@@ -4,10 +4,14 @@ import FeatureModules from '../components/home/FeatureModules';
 import ValueSection from '../components/home/ValueSection';
 import SafetyNotice from '../components/home/SafetyNotice';
 
-function HomePage() {
+type HomePageProps = {
+  onLogout: () => void;
+};
+
+function HomePage({ onLogout }: HomePageProps) {
   return (
     <div className="min-h-screen">
-      <Navbar />
+      <Navbar onLogout={onLogout} />
       <main>
         <HeroSection />
         <FeatureModules />

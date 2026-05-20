@@ -161,11 +161,11 @@ function AirportPreview() {
           <div className="absolute inset-0 opacity-50">
             <svg viewBox="0 0 240 180" className="h-full w-full">
               <path
-                d="M39 52 C58 34, 87 28, 110 37 C125 22, 156 20, 182 39 C203 54, 214 76, 208 97 C216 116, 205 140, 182 149 C159 167, 127 166, 103 154 C79 158, 48 148, 33 129 C20 111, 17 80, 39 52 Z"
+                d="M23 43 C43 24, 77 14, 108 23 C127 9, 164 10, 192 27 C215 40, 226 58, 223 78 C232 97, 226 126, 203 144 C181 163, 145 170, 115 161 C86 167, 50 158, 30 141 C14 125, 8 92, 23 43 Z"
                 fill="#d7c8b3"
                 opacity="0.72"
               />
-              <path d="M58 56 L155 54 L189 93 L157 129 L77 125 L45 88 Z" fill="none" stroke="#bca98f" strokeDasharray="5 5" />
+              <path d="M45 50 L164 45 L199 86 L165 136 L69 133 L35 86 Z" fill="none" stroke="#bca98f" strokeDasharray="5 5" />
             </svg>
           </div>
 

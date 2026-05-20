@@ -1,12 +1,16 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, LogOut } from 'lucide-react';
 import AirportMapCard from '../components/airports/AirportMapCard';
 import AirportDetailPanel from '../components/airports/AirportDetailPanel';
 import AirportTrendPanel from '../components/airports/AirportTrendPanel';
 import AirportLocalRiskPanel from '../components/airports/AirportLocalRiskPanel';
 import { airportRiskProfiles, defaultAirportId, type TimeScale } from '../data/mockAirportRiskData';
 
-function AirportRiskPage() {
+type AirportRiskPageProps = {
+  onLogout: () => void;
+};
+
+function AirportRiskPage({ onLogout }: AirportRiskPageProps) {
   const [selectedAirportId, setSelectedAirportId] = useState(defaultAirportId);
   const [activeScale, setActiveScale] = useState<TimeScale>('month');
 
@@ -24,10 +28,16 @@ function AirportRiskPage() {
 
         <div className="text-sm font-semibold text-foreground sm:text-base">机场风扰风险画像</div>
 
-        <a href="/" className="action-secondary">
-          <ArrowLeft size={16} />
-          返回首页
-        </a>
+        <div className="flex flex-wrap items-center justify-center gap-2 md:justify-end">
+          <a href="/" className="action-secondary">
+            <ArrowLeft size={16} />
+            返回首页
+          </a>
+          <button type="button" onClick={onLogout} className="action-secondary">
+            <LogOut size={16} />
+            退出登录
+          </button>
+        </div>
       </header>
 
       <main className="mx-auto mt-8 max-w-[1680px]">

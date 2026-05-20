@@ -22,10 +22,6 @@ function HeroSection() {
             <span className="text-[3.4rem] font-extrabold leading-[1.02] text-[#465d54] sm:text-[4.45rem] lg:text-[5.05rem]">智能展示平台</span>
           </h1>
 
-          <p className="mt-6 max-w-2xl text-base leading-8 text-[#f3fbf2]/95 sm:text-lg">
-            展示进近过程、机场画像与事件关联，直观展示风扰风险
-          </p>
-
           <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <a href="/approach" className="feature-entry">
               <Activity size={18} className="text-accent" />
@@ -35,7 +31,7 @@ function HeroSection() {
               <MapPin size={18} className="text-accent" />
               <span>机场风扰风险画像</span>
             </a>
-            <a href="#analysis-module" className="feature-entry">
+            <a href="/event-analysis" className="feature-entry">
               <BarChart3 size={18} className="text-accent" />
               <span>运行事件关联分析</span>
             </a>

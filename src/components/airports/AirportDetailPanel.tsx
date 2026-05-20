@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { CalendarDays, ChevronDown, Compass, Gauge, MapPinned, Waves } from 'lucide-react';
+import { ChevronDown, Compass, MapPinned, Waves } from 'lucide-react';
 import type { AirportRiskProfile } from '../../data/mockAirportRiskData';
 import { airportRiskMeta } from '../../utils/airportRiskMeta';
 
@@ -12,6 +12,7 @@ type AirportDetailPanelProps = {
 
 function AirportDetailPanel({ airports, airport, selectedAirportId, onSelect }: AirportDetailPanelProps) {
   const tone = airportRiskMeta[airport.riskLevel];
+  const predictionInterval = buildPredictionInterval(airport);
 
   return (
     <aside className="surface-card flex h-full flex-col p-5 sm:p-6">
@@ -63,9 +64,7 @@ function AirportDetailPanel({ airports, airport, selectedAirportId, onSelect }: 
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <MetricTile label="高风险天数" value={`${airport.highRiskDays} 天`} icon={<CalendarDays size={15} />} />
         <MetricTile label="主导风向" value={airport.mainWindDirection} icon={<Compass size={15} />} />
-        <MetricTile label="典型时段" value={airport.mainRiskPeriod} icon={<Gauge size={15} />} />
         <MetricTile label="风速参考" value={`${airport.windSpeed} kt`} icon={<Waves size={15} />} />
       </div>
 
@@ -79,19 +78,23 @@ function AirportDetailPanel({ airports, airport, selectedAirportId, onSelect }: 
           ))}
         </div>
       </div>
+
+      <div className="mt-4 rounded-[24px] border border-border/75 bg-white/85 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-sm font-semibold text-foreground">置信区间</div>
+          <span className="rounded-full bg-background/90 px-3 py-1 text-[11px] text-muted-foreground">当前最佳预测</span>
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-3">
+          <MetricStack label="下界" value={predictionInterval.lower} />
+          <MetricStack label="中心" value={airport.currentIndex} />
+          <MetricStack label="上界" value={predictionInterval.upper} />
+        </div>
+      </div>
     </aside>
   );
 }
 
-function MetricTile({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: string;
-  icon: ReactNode;
-}) {
+function MetricTile({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
   return (
     <div className="rounded-[20px] border border-border/70 bg-white/85 p-3.5">
       <div className="inline-flex items-center gap-2 text-xs text-muted-foreground">
@@ -101,6 +104,28 @@ function MetricTile({
       <div className="mt-2 text-sm font-semibold leading-6 text-foreground">{value}</div>
     </div>
   );
+}
+
+function MetricStack({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-[18px] bg-background/90 px-3 py-3 text-center">
+      <div className="text-[11px] text-muted-foreground">{label}</div>
+      <div className="mt-1 text-lg font-semibold text-foreground">{value}</div>
+    </div>
+  );
+}
+
+function buildPredictionInterval(airport: AirportRiskProfile) {
+  const deviation = Math.abs(airport.currentIndex - airport.annualAverage);
+  const halfWidth = Math.round(Math.max(4, Math.min(16, 4 + airport.windSpeed * 0.18 + deviation * 0.12)));
+  const lower = Math.max(0, airport.currentIndex - halfWidth);
+  const upper = Math.min(100, airport.currentIndex + halfWidth);
+
+  return {
+    lower,
+    upper,
+    width: upper - lower,
+  };
 }
 
 export default AirportDetailPanel;

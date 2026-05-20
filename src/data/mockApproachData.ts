@@ -4,6 +4,8 @@ export type ApproachPoint = {
   time: number;
   altitude: number;
   turbulenceIndex: number;
+  ciLower: number;
+  ciUpper: number;
   windSpeed: number;
   windDirection: number;
   riskLevel: RiskLevel;
@@ -43,11 +45,14 @@ const buildApproachPoint = (time: number): ApproachPoint => {
   const lowAltitudeLift = Math.max(0, (260 - altitude) / 14);
   const base = 26 + Math.sin(time / 4.1) * 7 + Math.cos(time / 2.7) * 4 + (1000 - altitude) / 55;
   const turbulenceIndex = clamp(Math.round(base + peak18 + peak28 + peak37 + lowAltitudeLift), 18, 88);
+  const localWidth = clamp(5 + Math.abs(Math.sin(time / 3.5)) * 4 + (turbulenceIndex >= 60 ? 2 : 0), 4, 13);
 
   return {
     time,
     altitude,
     turbulenceIndex,
+    ciLower: clamp(turbulenceIndex - localWidth, 0, 100),
+    ciUpper: clamp(turbulenceIndex + localWidth, 0, 100),
     windSpeed,
     windDirection,
     riskLevel: getRiskLevel(turbulenceIndex),
@@ -55,7 +60,7 @@ const buildApproachPoint = (time: number): ApproachPoint => {
   };
 };
 
-export const approachMockData: ApproachPoint[] = Array.from({ length: 46 }, (_, index) => buildApproachPoint(index));
+export const approachMockData: ApproachPoint[] = Array.from({ length: 61 }, (_, index) => buildApproachPoint(index));
 
 export const approachFlightSummary = {
   flight: 'CES-2026',

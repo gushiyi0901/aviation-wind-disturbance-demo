@@ -4,10 +4,12 @@ import type { ParsedFlightIndexRow } from './parseFlightIndexFile';
 
 export type UploadedApproachAnalysis = {
   data: ApproachPoint[];
-  keyMoments: Array<{
-    point: ApproachPoint;
-    summary: string;
-  }>;
+  keyMoments: ApproachAnalysisMoment[];
+};
+
+export type ApproachAnalysisMoment = {
+  point: ApproachPoint;
+  summary: string;
 };
 
 export function buildApproachDataFromUpload(rows: ParsedFlightIndexRow[]): UploadedApproachAnalysis {
@@ -20,15 +22,25 @@ export function buildApproachDataFromUpload(rows: ParsedFlightIndexRow[]): Uploa
     const trend = nextIndex - previousIndex;
     const progress = total <= 1 ? 0 : index / (total - 1);
     const altitude = Math.max(50, Math.round(1000 - progress * 950));
-    const turbulenceIndex = clamp(Math.round(row.index), 0, 100);
-    const windSpeed = Math.max(8, Math.round(10 + turbulenceIndex / 7 + Math.sin(index / 3.2) * 1.8 + trend * 0.18));
-    const windDirection = normalizeDirection(Math.round(226 + Math.sin(index / 2.8) * 9 + Math.cos(index / 4.3) * 6 + trend * 0.9));
-    const riskLevel = getUploadRiskLevel(turbulenceIndex);
+    const turbulenceIndex = clamp(row.index, 0, 100);
+    const displayIndex = normalizeDisplayIndex(turbulenceIndex);
+    const localVolatility = buildLocalVolatility(rows, index);
+    // Demo-only 95% interval approximation from recent local volatility; not a real statistical inference result.
+    const simulatedConfidenceWidth = clamp(0.045 + localVolatility * 0.65 + displayIndex * 0.035, 0.04, 0.18);
+    const simulatedCiLower = clamp(displayIndex - simulatedConfidenceWidth, 0, 1);
+    const simulatedCiUpper = clamp(displayIndex + simulatedConfidenceWidth, 0, 1);
+    const ciLower = row.ciLower ?? convertDisplayIndexToSourceScale(simulatedCiLower, turbulenceIndex);
+    const ciUpper = row.ciUpper ?? convertDisplayIndexToSourceScale(simulatedCiUpper, turbulenceIndex);
+    const windSpeed = row.windSpeed ?? Math.max(8, Math.round(10 + displayIndex * 18 + localVolatility * 26 + Math.sin(index / 3.2) * 1.8));
+    const windDirection = row.windDirection ?? normalizeDirection(Math.round(226 + Math.sin(index / 3.8) * 14 + Math.cos(index / 5.4) * 8 + trend * 0.6));
+    const riskLevel = getUploadRiskLevel(displayIndex * 100);
 
     return {
       time: row.time,
       altitude,
       turbulenceIndex,
+      ciLower,
+      ciUpper,
       windSpeed,
       windDirection,
       riskLevel,
@@ -36,7 +48,7 @@ export function buildApproachDataFromUpload(rows: ParsedFlightIndexRow[]): Uploa
     } satisfies ApproachPoint;
   });
 
-  const keyMoments = buildKeyMoments(data);
+  const keyMoments = buildApproachKeyMoments(data);
 
   return {
     data,
@@ -44,7 +56,7 @@ export function buildApproachDataFromUpload(rows: ParsedFlightIndexRow[]): Uploa
   };
 }
 
-function buildKeyMoments(data: ApproachPoint[]) {
+export function buildApproachKeyMoments(data: ApproachPoint[]): ApproachAnalysisMoment[] {
   const ranked = [...data]
     .sort((left, right) => right.turbulenceIndex - left.turbulenceIndex || left.time - right.time)
     .filter((point, index, array) => array.findIndex((item) => Math.abs(item.time - point.time) <= 3) === index)
@@ -121,6 +133,22 @@ function normalizeDirection(value: number) {
     result += 360;
   }
   return result;
+}
+
+function normalizeDisplayIndex(value: number) {
+  return clamp(value <= 1 ? value : value / 100, 0, 1);
+}
+
+function convertDisplayIndexToSourceScale(displayValue: number, sourceIndex: number) {
+  return sourceIndex <= 1 ? displayValue : displayValue * 100;
+}
+
+function buildLocalVolatility(rows: ParsedFlightIndexRow[], index: number) {
+  const start = Math.max(0, index - 4);
+  const recent = rows.slice(start, index + 1).map((row) => normalizeDisplayIndex(row.index));
+  const deltas = recent.slice(1).map((value, deltaIndex) => Math.abs(value - recent[deltaIndex]));
+
+  return deltas.length ? deltas.reduce((sum, value) => sum + value, 0) / deltas.length : 0;
 }
 
 function clamp(value: number, min: number, max: number) {

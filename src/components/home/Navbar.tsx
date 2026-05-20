@@ -1,4 +1,4 @@
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, LogOut } from 'lucide-react';
 
 const navItems = [
   { label: '项目概览', href: '#overview' },
@@ -11,7 +11,11 @@ const featureItems = [
   { label: '事件归因', href: '/event-analysis' },
 ];
 
-function Navbar() {
+type NavbarProps = {
+  onLogout: () => void;
+};
+
+function Navbar({ onLogout }: NavbarProps) {
   return (
     <header className="sticky top-0 z-50 px-4 pt-4 sm:px-6 lg:px-8">
       <nav className="glass-nav mx-auto flex max-w-[1680px] flex-col gap-3 px-4 py-3 sm:px-5 md:flex-row md:items-center md:justify-between">
@@ -54,6 +58,11 @@ function Navbar() {
           >
             {navItems[1].label}
           </a>
+
+          <button type="button" onClick={onLogout} className="action-secondary h-10 rounded-full px-4">
+            <LogOut size={15} />
+            退出登录
+          </button>
         </div>
       </nav>
     </header>

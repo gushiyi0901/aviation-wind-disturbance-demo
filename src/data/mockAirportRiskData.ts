@@ -1,6 +1,6 @@
 export type AirportRiskLevel = '低' | '中' | '较高' | '高';
 
-export type TimeScale = 'year' | 'quarter' | 'month' | 'week' | 'day' | 'hour';
+export type TimeScale = 'month' | 'week' | 'day' | 'hour';
 
 export type AirportLabelPlacement = 'right' | 'left' | 'top' | 'bottom';
 
@@ -32,8 +32,6 @@ export interface AirportRiskProfile {
   hotspotLabel: string;
   approachDirection: string;
   trend: {
-    year: number[];
-    quarter: number[];
     month: number[];
     week: number[];
     day: number[];
@@ -63,8 +61,6 @@ const weekLabels = Array.from({ length: 52 }, (_, index) => `W${index + 1}`);
 const dayLabels = Array.from({ length: 30 }, (_, index) => `D${index + 1}`);
 
 export const airportTrendLabels: Record<TimeScale, string[]> = {
-  year: ['2019', '2020', '2021', '2022', '2023', '2024'],
-  quarter: ['Q1', 'Q2', 'Q3', 'Q4'],
   month: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
   week: weekLabels,
   day: dayLabels,
@@ -549,8 +545,6 @@ export const airportRiskProfiles: AirportRiskProfile[] = airportSeeds.map((airpo
   return {
     ...airport,
     trend: {
-      year: buildSeries(6, base, amplitude * 0.6, phase, 7, 5),
-      quarter: buildSeries(4, base + airport.seasonalBias * 0.5, amplitude * 0.95, phase, 2, 0),
       month: buildSeries(12, base, amplitude * 0.85, phase, 4, 3),
       week: buildSeries(52, base, amplitude * 0.5, phase, 3, 41),
       day: buildSeries(30, base + 1, amplitude * 0.42, phase, 2, 21),

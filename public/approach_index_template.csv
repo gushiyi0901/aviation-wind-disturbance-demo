@@ -1,0 +1,6 @@
+flightNo,phase,time,index,ciLower,ciUpper
+MU2431,approach,0,28,24,32
+MU2431,approach,1,30.1,26.5,33.7
+MU2431,approach,2,32,28.2,35.8
+MU2431,approach,3,33.4,29.6,37.1
+MU2431,approach,4,35.2,31.1,39.3

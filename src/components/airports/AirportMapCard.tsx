@@ -1,13 +1,34 @@
 import { useState } from 'react';
 import { MapPin } from 'lucide-react';
 import type { AirportLabelPlacement, AirportRiskProfile } from '../../data/mockAirportRiskData';
-import { chinaMapViewBox, dashLinePaths, insetIslandPaths, projectAirportToChinaMap, provincePaths } from '../../utils/chinaTopoMap';
+import {
+  chinaMapViewBox,
+  dashLinePaths,
+  insetIslandPaths,
+  projectAirportToChinaMap,
+  provincePaths,
+  southChinaSeaInsetFrame,
+} from '../../utils/chinaTopoMap';
 
 type AirportMapCardProps = {
   airports: AirportRiskProfile[];
   selectedAirportId: string;
   onSelect: (id: string) => void;
 };
+
+type ColorStop = {
+  stop: number;
+  color: string;
+};
+
+const riskColorStops: ColorStop[] = [
+  { stop: 0, color: '#1f78b4' },
+  { stop: 0.25, color: '#21b6c7' },
+  { stop: 0.5, color: '#f2c94c' },
+  { stop: 0.72, color: '#f2994a' },
+  { stop: 0.9, color: '#d84a4a' },
+  { stop: 1, color: '#8e2a8a' },
+];
 
 function AirportMapCard({ airports, selectedAirportId, onSelect }: AirportMapCardProps) {
   const [hoveredAirportId, setHoveredAirportId] = useState<string | null>(null);
@@ -21,16 +42,23 @@ function AirportMapCard({ airports, selectedAirportId, onSelect }: AirportMapCar
           <h2 className="mt-4 text-2xl font-bold text-foreground">国内机场动态地图</h2>
         </div>
 
-        <div className="grid shrink-0 grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-4">
-          <LegendItem label="低风险" color={mapRiskMeta.低.dotColor} />
-          <LegendItem label="中风险" color={mapRiskMeta.中.dotColor} />
-          <LegendItem label="较高风险" color={mapRiskMeta.较高.dotColor} />
-          <LegendItem label="高风险" color={mapRiskMeta.高.dotColor} />
+        <div className="w-full max-w-[360px] shrink-0 rounded-[22px] border border-border/70 bg-white/75 px-4 py-3">
+          <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
+            <span>低风险</span>
+            <span>Risk 0-1</span>
+            <span>高风险</span>
+          </div>
+          <div className="mt-2 h-3 rounded-full bg-[linear-gradient(90deg,#1f78b4_0%,#21b6c7_25%,#f2c94c_50%,#f2994a_72%,#d84a4a_90%,#8e2a8a_100%)]" />
+          <div className="mt-2 flex justify-between text-[11px] font-semibold text-muted-foreground">
+            <span>0</span>
+            <span>0.5</span>
+            <span>1</span>
+          </div>
         </div>
       </div>
 
-      <div className="relative mt-6 flex-1 overflow-hidden rounded-[30px] border border-border/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,244,238,0.98))] p-3 sm:p-4">
-        <div className="relative h-full min-h-[500px] w-full lg:min-h-[620px]">
+      <div className="relative mt-6 flex-1 overflow-hidden rounded-[30px] border border-border/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,244,238,0.98))] p-3 sm:p-5">
+        <div className="relative mx-auto aspect-[25/19] min-h-[520px] w-full max-w-[1120px] lg:min-h-[660px]">
           <svg
             viewBox={`0 0 ${chinaMapViewBox.width} ${chinaMapViewBox.height}`}
             className="absolute inset-0 h-full w-full"
@@ -42,6 +70,18 @@ function AirportMapCard({ airports, selectedAirportId, onSelect }: AirportMapCar
             {provincePaths.map((feature) => (
               <path key={feature.key} d={feature.path} fill="#f3eee4" stroke="#8e948b" strokeWidth={1.8} strokeLinejoin="round" />
             ))}
+
+            {southChinaSeaInsetFrame && (
+              <rect
+                x={southChinaSeaInsetFrame.x}
+                y={southChinaSeaInsetFrame.y}
+                width={southChinaSeaInsetFrame.width}
+                height={southChinaSeaInsetFrame.height}
+                fill="rgba(255,255,255,0.65)"
+                stroke="#8e948b"
+                strokeWidth={1.8}
+              />
+            )}
 
             {insetIslandPaths.map((feature) => (
               <path key={feature.key} d={feature.path} fill="#f3eee4" stroke="#8e948b" strokeWidth={1.4} strokeLinejoin="round" />
@@ -61,10 +101,12 @@ function AirportMapCard({ airports, selectedAirportId, onSelect }: AirportMapCar
 
             {airports.map((airport) => {
               const point = projectAirportToChinaMap(airport.longitude, airport.latitude);
-              const tone = mapRiskMeta[airport.riskLevel];
+              const riskValue = normalizeRisk(airport.currentIndex);
+              const color = riskColor(riskValue);
+              const glowColor = colorWithAlpha(color, 0.24);
               const isSelected = airport.id === selectedAirportId;
-              const size = airport.riskLevel === '高' ? 16 : airport.riskLevel === '较高' ? 14 : airport.riskLevel === '中' ? 12 : 10;
-              const glowRadius = (isSelected ? size + 18 : size + 10) / 2;
+              const size = 10 + riskValue * 8;
+              const glowRadius = (isSelected ? size + 20 : size + 12) / 2;
               const label = `${airport.city}${airport.shortName}`;
               const placement = resolveLabelPlacement(airport.labelPlacement, point.x);
 
@@ -88,9 +130,10 @@ function AirportMapCard({ airports, selectedAirportId, onSelect }: AirportMapCar
                   tabIndex={0}
                   aria-label={`${airport.name}，当前指数 ${airport.currentIndex}`}
                 >
-                  <circle r={glowRadius} fill={tone.glowColor} />
-                  {isSelected && <circle r={size / 2 + 4} fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth={4} />}
-                  <circle r={size / 2} fill={tone.dotColor} stroke="#ffffff" strokeWidth={2.5} />
+                  <circle r={glowRadius} fill={glowColor} />
+                  {isSelected && <circle r={size / 2 + 5} fill="none" stroke="#2f493b" strokeWidth={3.5} />}
+                  {isSelected && <circle r={size / 2 + 9} fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={3} />}
+                  <circle r={size / 2} fill={color} stroke="#ffffff" strokeWidth={2.5} />
                   <circle r={18} fill="transparent" />
                   <AirportLabel airport={airport} label={label} placement={placement} />
                 </g>
@@ -99,13 +142,13 @@ function AirportMapCard({ airports, selectedAirportId, onSelect }: AirportMapCar
           </svg>
 
           {hoveredAirport && (
-            <div className="pointer-events-none absolute left-4 top-4 z-[4] max-w-[240px] rounded-[22px] border border-white/70 bg-white/90 px-4 py-3 shadow-soft backdrop-blur-xl">
+            <div className="pointer-events-none absolute left-4 top-4 z-[4] max-w-[260px] rounded-[22px] border border-white/70 bg-white/92 px-4 py-3 shadow-soft backdrop-blur-xl">
               <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.12em] text-accent-secondary">
                 <MapPin size={14} />
                 {hoveredAirport.name}
               </div>
               <div className="mt-2 text-sm text-muted-foreground">
-                当前指数 {hoveredAirport.currentIndex} · 风险等级 {hoveredAirport.riskLevel}
+                当前指数 {hoveredAirport.currentIndex} · 风险映射 {normalizeRisk(hoveredAirport.currentIndex).toFixed(2)}
               </div>
             </div>
           )}
@@ -138,7 +181,7 @@ function AirportLabel({
 }) {
   const commonProps = {
     fill: '#000000',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 700,
     paintOrder: 'stroke' as const,
     stroke: 'rgba(255,255,255,0.94)',
@@ -177,32 +220,39 @@ function AirportLabel({
   );
 }
 
-function LegendItem({ label, color }: { label: string; color: string }) {
-  return (
-    <div className="inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-2">
-      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
-      <span>{label}</span>
-    </div>
-  );
+function normalizeRisk(index: number) {
+  return Math.min(1, Math.max(0, index / 100));
+}
+
+function riskColor(value: number) {
+  const normalized = Math.min(1, Math.max(0, value));
+  const upperIndex = riskColorStops.findIndex((item) => item.stop >= normalized);
+
+  if (upperIndex <= 0) {
+    return riskColorStops[0].color;
+  }
+
+  const lower = riskColorStops[upperIndex - 1];
+  const upper = riskColorStops[upperIndex];
+  const localT = (normalized - lower.stop) / Math.max(upper.stop - lower.stop, 0.001);
+  return interpolateHex(lower.color, upper.color, localT);
+}
+
+function interpolateHex(start: string, end: string, t: number) {
+  const from = hexToRgb(start);
+  const to = hexToRgb(end);
+  const mixed = from.map((channel, index) => Math.round(channel + (to[index] - channel) * t));
+  return `#${mixed.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+}
+
+function hexToRgb(hex: string) {
+  const clean = hex.replace('#', '');
+  return [0, 2, 4].map((offset) => Number.parseInt(clean.slice(offset, offset + 2), 16));
+}
+
+function colorWithAlpha(hex: string, alpha: number) {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 export default AirportMapCard;
-
-const mapRiskMeta: Record<string, { dotColor: string; glowColor: string }> = {
-  低: {
-    dotColor: '#6f8d7d',
-    glowColor: 'rgba(111,141,125,0.18)',
-  },
-  中: {
-    dotColor: '#4e6c5c',
-    glowColor: 'rgba(78,108,92,0.2)',
-  },
-  较高: {
-    dotColor: '#2f493b',
-    glowColor: 'rgba(47,73,59,0.24)',
-  },
-  高: {
-    dotColor: '#172a22',
-    glowColor: 'rgba(23,42,34,0.28)',
-  },
-};

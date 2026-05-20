@@ -1,6 +1,10 @@
 export type ParsedFlightIndexRow = {
   time: number;
   index: number;
+  ciLower?: number;
+  ciUpper?: number;
+  windSpeed?: number;
+  windDirection?: number;
 };
 
 type ParseFlightIndexFileResult = {
@@ -25,6 +29,11 @@ declare global {
 const SUPPORTED_EXTENSIONS = ['csv', 'xlsx', 'xls'];
 const TIME_HEADERS = new Set(['time', '时间', '秒数', 'second', 'seconds']);
 const INDEX_HEADERS = new Set(['index', '风扰指数', 'riskindex', 'turbulenceindex']);
+
+const CI_LOWER_HEADERS = new Set(['cilower', 'confidencelower', 'lower', '置信下界']);
+const CI_UPPER_HEADERS = new Set(['ciupper', 'confidenceupper', 'upper', '置信上界']);
+const WIND_SPEED_HEADERS = new Set(['windspeed', '风速']);
+const WIND_DIRECTION_HEADERS = new Set(['winddirection', '风向']);
 
 export async function parseFlightIndexFile(file: File): Promise<ParseFlightIndexFileResult> {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
@@ -155,15 +164,29 @@ function normalizeMatrixToRows(matrix: unknown[][]): ParsedFlightIndexRow[] {
   let timeColumn = 0;
   let indexColumn = 1;
   let dataRows = meaningfulRows;
+  const optionalColumns: Record<'ciLower' | 'ciUpper' | 'windSpeed' | 'windDirection', number> = {
+    ciLower: -1,
+    ciUpper: -1,
+    windSpeed: -1,
+    windDirection: -1,
+  };
 
   if (hasHeaderLikeCell) {
     const normalizedHeaders = firstRow.map((cell) => normalizeHeader(cell));
     const detectedTimeColumn = normalizedHeaders.findIndex((header) => TIME_HEADERS.has(header));
     const detectedIndexColumn = normalizedHeaders.findIndex((header) => INDEX_HEADERS.has(header));
+    const detectedCiLowerColumn = normalizedHeaders.findIndex((header) => CI_LOWER_HEADERS.has(header));
+    const detectedCiUpperColumn = normalizedHeaders.findIndex((header) => CI_UPPER_HEADERS.has(header));
+    const detectedWindSpeedColumn = normalizedHeaders.findIndex((header) => WIND_SPEED_HEADERS.has(header));
+    const detectedWindDirectionColumn = normalizedHeaders.findIndex((header) => WIND_DIRECTION_HEADERS.has(header));
 
     if (detectedTimeColumn >= 0 && detectedIndexColumn >= 0) {
       timeColumn = detectedTimeColumn;
       indexColumn = detectedIndexColumn;
+      optionalColumns.ciLower = detectedCiLowerColumn;
+      optionalColumns.ciUpper = detectedCiUpperColumn;
+      optionalColumns.windSpeed = detectedWindSpeedColumn;
+      optionalColumns.windDirection = detectedWindDirectionColumn;
       dataRows = meaningfulRows.slice(1);
     } else if (firstRow.length >= 2) {
       timeColumn = 0;
@@ -197,10 +220,17 @@ function normalizeMatrixToRows(matrix: unknown[][]): ParsedFlightIndexRow[] {
       throw new Error('风扰指数列存在无效数据，请检查后重新上传。');
     }
 
-    rows.push({
+    const parsedRow: ParsedFlightIndexRow = {
       time,
       index: clamp(index, 0, 100),
-    });
+    };
+
+    assignOptionalNumber(parsedRow, 'ciLower', row[optionalColumns.ciLower], 0, 100);
+    assignOptionalNumber(parsedRow, 'ciUpper', row[optionalColumns.ciUpper], 0, 100);
+    assignOptionalNumber(parsedRow, 'windSpeed', row[optionalColumns.windSpeed], 0, 80);
+    assignOptionalNumber(parsedRow, 'windDirection', row[optionalColumns.windDirection], 0, 360);
+
+    rows.push(parsedRow);
   }
 
   if (!rows.length) {
@@ -219,6 +249,23 @@ function normalizeHeader(value: unknown) {
 
 function isNumericString(value: string) {
   return value.trim() !== '' && Number.isFinite(Number(value));
+}
+
+function assignOptionalNumber<Key extends 'ciLower' | 'ciUpper' | 'windSpeed' | 'windDirection'>(
+  row: ParsedFlightIndexRow,
+  key: Key,
+  value: unknown,
+  min: number,
+  max: number,
+) {
+  if (String(value ?? '').trim() === '') {
+    return;
+  }
+
+  const numericValue = Number(value);
+  if (Number.isFinite(numericValue)) {
+    row[key] = clamp(numericValue, min, max);
+  }
 }
 
 function clamp(value: number, min: number, max: number) {

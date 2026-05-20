@@ -1,8 +1,9 @@
-import { FileSpreadsheet, FileUp, Play, RefreshCw } from 'lucide-react';
+import { Download, FileSpreadsheet, FileUp, Play, RefreshCw, Sparkles } from 'lucide-react';
 
 type FileUploadPanelProps = {
   onFileSelect: (file: File | null) => void;
   onStartAnalysis: () => void;
+  onUseExample: () => void;
   selectedFileName: string | null;
   rowCount: number;
   error: string | null;
@@ -13,6 +14,7 @@ type FileUploadPanelProps = {
 function FileUploadPanel({
   onFileSelect,
   onStartAnalysis,
+  onUseExample,
   selectedFileName,
   rowCount,
   error,
@@ -21,22 +23,21 @@ function FileUploadPanel({
 }: FileUploadPanelProps) {
   return (
     <section className="surface-card mt-6 px-6 py-7 sm:px-8">
-      <div className="section-kicker bg-white/70">上传数据</div>
-      <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
-        <div className="rounded-[30px] border border-dashed border-accent/30 bg-white/55 p-5 backdrop-blur-xl sm:p-6">
-          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,1.08fr)_minmax(360px,0.92fr)]">
+        <div className="flex h-full flex-col rounded-[30px] border border-dashed border-accent/30 bg-white/58 p-5 backdrop-blur-xl sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-foreground">上传秒级风扰指数数据</h2>
+              <h2 className="text-[1.85rem] font-bold text-foreground">上传进近风扰指数数据</h2>
               <p className="mt-2 text-sm leading-7 text-muted-foreground sm:text-base">
-                生成单次进近过程的动态曲线
+                当前演示继续沿用原有上传逻辑，支持 `time / index` 或 `时间 / 风扰指数` 两列生成曲线。
               </p>
             </div>
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10 text-accent">
+            <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent/10 text-accent">
               <FileSpreadsheet size={22} />
             </div>
           </div>
 
-          <label className="mt-6 block cursor-pointer rounded-[28px] border border-dashed border-border/80 bg-white/70 px-5 py-7 transition duration-200 hover:border-accent/30 hover:bg-white/80">
+          <label className="mt-6 block cursor-pointer rounded-[28px] border border-dashed border-border/80 bg-white/74 px-5 py-8 transition duration-200 hover:border-accent/30 hover:bg-white/84">
             <input
               type="file"
               accept=".csv,.xlsx,.xls"
@@ -48,22 +49,34 @@ function FileUploadPanel({
               <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-accent/10 text-accent">
                 <FileUp size={24} />
               </div>
-              <div className="mt-4 text-lg font-semibold text-foreground">选择数据文件</div>
-              <div className="mt-2 text-sm text-muted-foreground">支持 CSV / XLSX / XLS</div>
+              <div className="mt-4 text-lg font-semibold text-foreground">选择 CSV / Excel 文件</div>
+              <div className="mt-2 text-sm text-muted-foreground">上传成功后即可进入动态分析界面</div>
             </div>
           </label>
 
+          <div className="mt-4 grid gap-3 rounded-[24px] border border-border/70 bg-white/72 p-4 text-sm text-muted-foreground sm:grid-cols-2">
+            <div>支持格式：CSV / XLSX / XLS</div>
+            <div>当前最低要求：至少 5 个采样点</div>
+            <div>时间字段：`time` 或 `时间`</div>
+            <div>指数字段：`index` 或 `风扰指数`</div>
+          </div>
+
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            <button type="button" onClick={onStartAnalysis} disabled={!isReady || isParsing} className="action-primary disabled:cursor-not-allowed disabled:opacity-60">
+            <button
+              type="button"
+              onClick={onStartAnalysis}
+              disabled={!isReady || isParsing}
+              className="action-primary disabled:cursor-not-allowed disabled:opacity-60"
+            >
               <Play size={16} />
-              开始动态分析
+              开始分析
             </button>
 
             {selectedFileName && (
-              <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-white/80 px-4 py-2 text-sm text-muted-foreground">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-white/82 px-4 py-2 text-sm text-muted-foreground">
                 <RefreshCw size={14} className={isParsing ? 'animate-spin' : ''} />
-                {selectedFileName}
-                {rowCount > 0 && <span className="font-semibold text-foreground">{rowCount} 条</span>}
+                <span className="truncate">{selectedFileName}</span>
+                {rowCount > 0 && <span className="font-semibold text-foreground">{rowCount} 行</span>}
               </div>
             )}
           </div>
@@ -75,26 +88,93 @@ function FileUploadPanel({
           )}
         </div>
 
-        <div className="self-start">
-          <article className="rounded-[24px] border border-border/75 bg-white/68 p-4 sm:p-4.5">
-            <div className="text-sm font-semibold text-foreground">示例数据格式</div>
-            <div className="mt-3 rounded-[18px] bg-[#f8f2e8] p-3 text-sm text-foreground">
-              <div className="font-mono text-[12px] leading-6">
-                <div>时间,风扰指数</div>
-                <div>0,28</div>
-                <div>1,30.1</div>
-                <div>2,32</div>
+        <article className="flex h-full flex-col rounded-[28px] border border-border/75 bg-white/64 p-5 sm:p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground">Template</div>
+              <div className="mt-2 text-lg font-semibold text-foreground">数据模板预览</div>
+            </div>
+            <a
+              href="/approach_index_template.csv"
+              download
+              className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-border/80 bg-white/84 px-4 text-sm font-semibold text-foreground transition hover:-translate-y-0.5"
+            >
+              <Download size={15} />
+              下载模板
+            </a>
+          </div>
+
+          <div className="mt-4 overflow-hidden rounded-[22px] border border-border/75 bg-[#f8f5ef]">
+            <table className="w-full border-collapse text-left text-[13px] text-foreground sm:text-sm">
+              <thead className="bg-[#efe7da] text-muted-foreground">
+                <tr>
+                  {templateColumns.map((column) => (
+                    <th key={column} className="border-b border-white/80 px-3 py-3 font-semibold">
+                      {column}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {templatePreviewRows.map((row, rowIndex) => (
+                  <tr key={rowIndex} className="odd:bg-white/55">
+                    {row.map((cell) => (
+                      <td key={cell} className="border-b border-white/70 px-3 py-3 font-mono text-[12px] sm:text-[13px]">
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-4 space-y-2 text-sm leading-6 text-muted-foreground">
+            <div>当前前端演示只要求 `time / index`，即可生成曲线。</div>
+            <div>`flightNo`、`phase`、`ciLower`、`ciUpper` 为后续统一 Excel 模板预留。</div>
+          </div>
+
+          <div className="mt-4 grid gap-2 rounded-[22px] border border-border/70 bg-white/74 p-4 text-sm text-muted-foreground">
+            {fieldDescriptions.map((item) => (
+              <div key={item.field} className="grid grid-cols-[92px_minmax(0,1fr)] gap-3">
+                <span className="font-mono text-foreground">{item.field}</span>
+                <span>{item.label}</span>
               </div>
-            </div>
-            <div className="mt-3 space-y-1.5 text-xs leading-6 text-muted-foreground">
-              <div>时间：以秒为单位</div>
-              <div>风扰指数：0–100</div>
-            </div>
-          </article>
+            ))}
+          </div>
+        </article>
+      </div>
+
+      <div className="mt-6 flex flex-col gap-3 rounded-[24px] border border-border/70 bg-white/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="text-base font-semibold text-foreground">Example</div>
+          <div className="mt-1 text-sm text-muted-foreground">不上传文件，使用内置示例数据进入分析界面</div>
         </div>
+        <button type="button" onClick={onUseExample} className="action-secondary h-11">
+          <Sparkles size={16} />
+          Example
+        </button>
       </div>
     </section>
   );
 }
+
+// The preview follows the future unified Excel template direction, while the current demo still only requires time/index.
+const templateColumns = ['flightNo', 'phase', 'time', 'index', 'ciLower', 'ciUpper'];
+
+const templatePreviewRows = [
+  ['MU2431', 'approach', '0', '28', '24', '32'],
+  ['MU2431', 'approach', '1', '30.1', '26.5', '33.7'],
+  ['MU2431', 'approach', '2', '32', '28.2', '35.8'],
+];
+
+const fieldDescriptions = [
+  { field: 'flightNo', label: '航班号' },
+  { field: 'phase', label: '阶段' },
+  { field: 'time', label: '时间秒' },
+  { field: 'index', label: '风扰指数' },
+  { field: 'ciLower', label: '置信下界' },
+  { field: 'ciUpper', label: '置信上界' },
+];
 
 export default FileUploadPanel;
