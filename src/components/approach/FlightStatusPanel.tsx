@@ -4,6 +4,7 @@ import type { AverageDimension, TimeRange } from './approachAnalysisTypes';
 import { averageDimensionOptions } from './approachAnalysisTypes';
 import type { ApproachPoint } from '../../data/mockApproachData';
 import { riskLevelMeta } from '../../utils/riskLevel';
+import { formatWindDisturbanceIndex, indexToPercent } from '../../utils/indexScale';
 
 type FlightStatusPanelProps = {
   point: ApproachPoint;
@@ -49,7 +50,7 @@ function FlightStatusPanel({
         <MetricTile label="航班信息" value={flight} icon={<Plane size={15} />} />
         <MetricTile label="阶段" value={stage} icon={<Activity size={15} />} />
         <MetricTile label="高度" value={`${displayPoint.altitude} ft`} icon={<Gauge size={15} />} />
-        <MetricTile label="风扰指数" value={`${displayPoint.turbulenceIndex}`} icon={<Activity size={15} />} prominent />
+        <MetricTile label="风扰指数" value={formatWindDisturbanceIndex(displayPoint.turbulenceIndex)} icon={<Activity size={15} />} prominent />
       </div>
 
       <section className="mt-4 rounded-[24px] border border-border/75 bg-[#f9f6ef] p-4">
@@ -200,7 +201,7 @@ function RangeRow({
 }
 
 function normalizeProgressWidth(value: number) {
-  return value <= 1 ? value * 100 : value;
+  return indexToPercent(value);
 }
 
 export default FlightStatusPanel;

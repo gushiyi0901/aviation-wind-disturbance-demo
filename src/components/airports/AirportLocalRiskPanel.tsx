@@ -1,5 +1,6 @@
 import type { AirportRiskProfile } from '../../data/mockAirportRiskData';
 import { airportRiskMeta } from '../../utils/airportRiskMeta';
+import { formatWindDisturbanceIndex } from '../../utils/indexScale';
 
 const directionLabels = ['北', '东北', '东南', '南', '西南', '西北'] as const;
 
@@ -14,7 +15,7 @@ function AirportLocalRiskPanel({ airport }: { airport: AirportRiskProfile }) {
           <h2 className="text-2xl font-bold text-foreground">{airport.name}</h2>
           <div className="mt-2 inline-flex items-center rounded-full bg-white/70 px-3 py-1.5 text-sm text-muted-foreground">{airport.type}</div>
         </div>
-        <div className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${tone.pillClass}`}>指数 {airport.currentIndex}</div>
+        <div className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${tone.pillClass}`}>指数 {formatWindDisturbanceIndex(airport.currentIndex)}</div>
       </div>
 
       <div className="mt-6 grid items-stretch gap-4 xl:grid-cols-2">

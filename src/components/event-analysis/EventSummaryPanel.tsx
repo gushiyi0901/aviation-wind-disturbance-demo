@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ChevronDown, Gauge, Radar, Wind } from 'lucide-react';
 import type { EventAnalysisAirport } from '../../data/mockEventAnalysisData';
 import { eventQuadrantMeta } from '../../data/mockEventAnalysisData';
+import { formatWindDisturbanceIndex } from '../../utils/indexScale';
 
 type EventSummaryPanelProps = {
   airports: EventAnalysisAirport[];
@@ -47,7 +48,7 @@ function EventSummaryPanel({ airports, airport, selectedAirportId, onSelect }: E
         <div className="flex items-center justify-between gap-4">
           <div>
             <div className="text-sm text-muted-foreground">平均风扰指数</div>
-            <div className="mt-2 text-5xl font-extrabold leading-none text-foreground">{airport.averageIndex}</div>
+            <div className="mt-2 text-5xl font-extrabold leading-none text-foreground">{formatWindDisturbanceIndex(airport.averageIndex)}</div>
           </div>
           <div className="rounded-[22px] bg-background/90 px-4 py-3 text-right">
             <div className="text-xs text-muted-foreground">降落事件数</div>

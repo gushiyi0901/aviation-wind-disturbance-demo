@@ -1,6 +1,7 @@
 import type { ApproachPoint } from '../data/mockApproachData';
 import type { RiskLevel } from './riskLevel';
 import type { ParsedFlightIndexRow } from './parseFlightIndexFile';
+import { formatWindDisturbanceIndex, normalizeWindDisturbanceIndex } from './indexScale';
 
 export type UploadedApproachAnalysis = {
   data: ApproachPoint[];
@@ -22,18 +23,18 @@ export function buildApproachDataFromUpload(rows: ParsedFlightIndexRow[]): Uploa
     const trend = nextIndex - previousIndex;
     const progress = total <= 1 ? 0 : index / (total - 1);
     const altitude = Math.max(50, Math.round(1000 - progress * 950));
-    const turbulenceIndex = clamp(row.index, 0, 100);
-    const displayIndex = normalizeDisplayIndex(turbulenceIndex);
+    const turbulenceIndex = normalizeWindDisturbanceIndex(row.index);
+    const displayIndex = turbulenceIndex;
     const localVolatility = buildLocalVolatility(rows, index);
-    // Demo-only 95% interval approximation from recent local volatility; not a real statistical inference result.
-    const simulatedConfidenceWidth = clamp(0.045 + localVolatility * 0.65 + displayIndex * 0.035, 0.04, 0.18);
+    // Demo-only interval approximation from recent local volatility; not a real statistical inference result.
+    const simulatedConfidenceWidth = clamp(0.09 + localVolatility * 1.05 + displayIndex * 0.055, 0.08, 0.24);
     const simulatedCiLower = clamp(displayIndex - simulatedConfidenceWidth, 0, 1);
     const simulatedCiUpper = clamp(displayIndex + simulatedConfidenceWidth, 0, 1);
-    const ciLower = row.ciLower ?? convertDisplayIndexToSourceScale(simulatedCiLower, turbulenceIndex);
-    const ciUpper = row.ciUpper ?? convertDisplayIndexToSourceScale(simulatedCiUpper, turbulenceIndex);
+    const ciLower = row.ciLower ?? simulatedCiLower;
+    const ciUpper = row.ciUpper ?? simulatedCiUpper;
     const windSpeed = row.windSpeed ?? Math.max(8, Math.round(10 + displayIndex * 18 + localVolatility * 26 + Math.sin(index / 3.2) * 1.8));
-    const windDirection = row.windDirection ?? normalizeDirection(Math.round(226 + Math.sin(index / 3.8) * 14 + Math.cos(index / 5.4) * 8 + trend * 0.6));
-    const riskLevel = getUploadRiskLevel(displayIndex * 100);
+    const windDirection = row.windDirection ?? normalizeDirection(Math.round(226 + Math.sin(index / 3.8) * 14 + Math.cos(index / 5.4) * 8 + trend * 60));
+    const riskLevel = getUploadRiskLevel(displayIndex);
 
     return {
       time: row.time,
@@ -71,18 +72,18 @@ export function buildApproachKeyMoments(data: ApproachPoint[]): ApproachAnalysis
 
 function buildMomentSummary(point: ApproachPoint) {
   if (point.factor === '风速变化') {
-    return `风速变化增强，指数升至 ${point.turbulenceIndex}。`;
+    return `风速变化增强，指数升至 ${formatWindDisturbanceIndex(point.turbulenceIndex)}。`;
   }
 
   if (point.factor === '风向波动') {
-    return `风向波动明显，指数升至 ${point.turbulenceIndex}。`;
+    return `风向波动明显，指数升至 ${formatWindDisturbanceIndex(point.turbulenceIndex)}。`;
   }
 
   if (point.factor === '低高度扰动') {
     return `低高度阶段扰动持续，风险等级保持${point.riskLevel}。`;
   }
 
-  return `局部风场不稳定，指数升至 ${point.turbulenceIndex}。`;
+  return `局部风场不稳定，指数升至 ${formatWindDisturbanceIndex(point.turbulenceIndex)}。`;
 }
 
 function buildFactorLabel({
@@ -96,11 +97,11 @@ function buildFactorLabel({
   turbulenceIndex: number;
   windDirection: number;
 }) {
-  if (altitude <= 240 && turbulenceIndex >= 60) {
+  if (altitude <= 240 && turbulenceIndex >= 0.6) {
     return '低高度扰动';
   }
 
-  if (Math.abs(trend) >= 10) {
+  if (Math.abs(trend) >= 0.1) {
     return '风速变化';
   }
 
@@ -112,15 +113,15 @@ function buildFactorLabel({
 }
 
 function getUploadRiskLevel(index: number): RiskLevel {
-  if (index >= 80) {
+  if (index >= 0.8) {
     return '高';
   }
 
-  if (index >= 60) {
+  if (index >= 0.6) {
     return '偏高';
   }
 
-  if (index >= 40) {
+  if (index >= 0.4) {
     return '中';
   }
 
@@ -135,17 +136,9 @@ function normalizeDirection(value: number) {
   return result;
 }
 
-function normalizeDisplayIndex(value: number) {
-  return clamp(value <= 1 ? value : value / 100, 0, 1);
-}
-
-function convertDisplayIndexToSourceScale(displayValue: number, sourceIndex: number) {
-  return sourceIndex <= 1 ? displayValue : displayValue * 100;
-}
-
 function buildLocalVolatility(rows: ParsedFlightIndexRow[], index: number) {
   const start = Math.max(0, index - 4);
-  const recent = rows.slice(start, index + 1).map((row) => normalizeDisplayIndex(row.index));
+  const recent = rows.slice(start, index + 1).map((row) => normalizeWindDisturbanceIndex(row.index));
   const deltas = recent.slice(1).map((value, deltaIndex) => Math.abs(value - recent[deltaIndex]));
 
   return deltas.length ? deltas.reduce((sum, value) => sum + value, 0) / deltas.length : 0;

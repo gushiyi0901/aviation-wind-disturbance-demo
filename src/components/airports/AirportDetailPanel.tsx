@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ChevronDown, Compass, MapPinned, Waves } from 'lucide-react';
 import type { AirportRiskProfile } from '../../data/mockAirportRiskData';
 import { airportRiskMeta } from '../../utils/airportRiskMeta';
+import { formatWindDisturbanceIndex, indexToPercent } from '../../utils/indexScale';
 
 type AirportDetailPanelProps = {
   airports: AirportRiskProfile[];
@@ -51,15 +52,15 @@ function AirportDetailPanel({ airports, airport, selectedAirportId, onSelect }: 
         <div className="flex items-center justify-between gap-4">
           <div>
             <div className="text-sm text-muted-foreground">当前风扰指数</div>
-            <div className="mt-2 text-5xl font-extrabold leading-none text-foreground">{airport.currentIndex}</div>
+            <div className="mt-2 text-5xl font-extrabold leading-none text-foreground">{formatWindDisturbanceIndex(airport.currentIndex)}</div>
           </div>
           <div className="rounded-[22px] bg-background/90 px-4 py-3 text-right">
             <div className="text-xs text-muted-foreground">平均指数</div>
-            <div className="mt-1 text-lg font-semibold text-foreground">{airport.annualAverage}</div>
+            <div className="mt-1 text-lg font-semibold text-foreground">{formatWindDisturbanceIndex(airport.annualAverage)}</div>
           </div>
         </div>
         <div className="mt-4 h-2.5 rounded-full bg-[#eee3d4]">
-          <div className="h-2.5 rounded-full" style={{ width: `${airport.currentIndex}%`, backgroundColor: tone.dotColor }} />
+          <div className="h-2.5 rounded-full" style={{ width: `${indexToPercent(airport.currentIndex)}%`, backgroundColor: tone.dotColor }} />
         </div>
       </div>
 
@@ -110,20 +111,20 @@ function MetricStack({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-[18px] bg-background/90 px-3 py-3 text-center">
       <div className="text-[11px] text-muted-foreground">{label}</div>
-      <div className="mt-1 text-lg font-semibold text-foreground">{value}</div>
+      <div className="mt-1 text-lg font-semibold text-foreground">{formatWindDisturbanceIndex(value)}</div>
     </div>
   );
 }
 
 function buildPredictionInterval(airport: AirportRiskProfile) {
   const deviation = Math.abs(airport.currentIndex - airport.annualAverage);
-  const halfWidth = Math.round(Math.max(4, Math.min(16, 4 + airport.windSpeed * 0.18 + deviation * 0.12)));
+  const halfWidth = Math.max(0.04, Math.min(0.16, 0.04 + airport.windSpeed * 0.0018 + deviation * 0.12));
   const lower = Math.max(0, airport.currentIndex - halfWidth);
-  const upper = Math.min(100, airport.currentIndex + halfWidth);
+  const upper = Math.min(1, airport.currentIndex + halfWidth);
 
   return {
-    lower,
-    upper,
+    lower: Number(lower.toFixed(2)),
+    upper: Number(upper.toFixed(2)),
     width: upper - lower,
   };
 }

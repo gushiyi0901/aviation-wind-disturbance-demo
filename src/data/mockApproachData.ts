@@ -1,4 +1,5 @@
 import { getRiskLevel, type RiskLevel } from '../utils/riskLevel';
+import { formatWindDisturbanceIndex } from '../utils/indexScale';
 
 export type ApproachPoint = {
   time: number;
@@ -44,15 +45,16 @@ const buildApproachPoint = (time: number): ApproachPoint => {
   const peak37 = Math.exp(-((time - 37) ** 2) / 8) * 17;
   const lowAltitudeLift = Math.max(0, (260 - altitude) / 14);
   const base = 26 + Math.sin(time / 4.1) * 7 + Math.cos(time / 2.7) * 4 + (1000 - altitude) / 55;
-  const turbulenceIndex = clamp(Math.round(base + peak18 + peak28 + peak37 + lowAltitudeLift), 18, 88);
-  const localWidth = clamp(5 + Math.abs(Math.sin(time / 3.5)) * 4 + (turbulenceIndex >= 60 ? 2 : 0), 4, 13);
+  const rawIndex = clamp(Math.round(base + peak18 + peak28 + peak37 + lowAltitudeLift), 18, 88);
+  const turbulenceIndex = Number((rawIndex / 100).toFixed(2));
+  const localWidth = clamp(0.08 + Math.abs(Math.sin(time / 3.5)) * 0.06 + (turbulenceIndex >= 0.6 ? 0.04 : 0), 0.08, 0.2);
 
   return {
     time,
     altitude,
     turbulenceIndex,
-    ciLower: clamp(turbulenceIndex - localWidth, 0, 100),
-    ciUpper: clamp(turbulenceIndex + localWidth, 0, 100),
+    ciLower: Number(clamp(turbulenceIndex - localWidth, 0, 1).toFixed(2)),
+    ciUpper: Number(clamp(turbulenceIndex + localWidth, 0, 1).toFixed(2)),
     windSpeed,
     windDirection,
     riskLevel: getRiskLevel(turbulenceIndex),
@@ -71,9 +73,9 @@ export const approachKeyMoments = [18, 28, 37].map((time) => {
   const point = approachMockData.find((item) => item.time === time)!;
   const summary =
     time === 18
-      ? `风速短时抬升，指数升至 ${point.turbulenceIndex}。`
+      ? `风速短时抬升，指数升至 ${formatWindDisturbanceIndex(point.turbulenceIndex)}。`
       : time === 28
-        ? `风向波动增强，指数升至 ${point.turbulenceIndex}。`
+        ? `风向波动增强，指数升至 ${formatWindDisturbanceIndex(point.turbulenceIndex)}。`
         : `低高度阶段扰动持续，风险等级保持${point.riskLevel}。`;
 
   return { point, summary };

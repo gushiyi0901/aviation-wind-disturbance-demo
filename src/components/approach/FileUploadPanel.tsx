@@ -1,4 +1,4 @@
-import { Download, FileSpreadsheet, FileUp, Play, RefreshCw, Sparkles } from 'lucide-react';
+import { Download, FileSpreadsheet, FileUp, Play, RefreshCw } from 'lucide-react';
 
 type FileUploadPanelProps = {
   onFileSelect: (file: File | null) => void;
@@ -29,7 +29,7 @@ function FileUploadPanel({
             <div>
               <h2 className="text-[1.85rem] font-bold text-foreground">上传进近风扰指数数据</h2>
               <p className="mt-2 text-sm leading-7 text-muted-foreground sm:text-base">
-                当前演示继续沿用原有上传逻辑，支持 `time / index` 或 `时间 / 风扰指数` 两列生成曲线。
+                当前模板按距接地时间横向展开，每列为一个采样点，风扰指数范围为 0-1
               </p>
             </div>
             <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent/10 text-accent">
@@ -57,8 +57,8 @@ function FileUploadPanel({
           <div className="mt-4 grid gap-3 rounded-[24px] border border-border/70 bg-white/72 p-4 text-sm text-muted-foreground sm:grid-cols-2">
             <div>支持格式：CSV / XLSX / XLS</div>
             <div>当前最低要求：至少 5 个采样点</div>
-            <div>时间字段：`time` 或 `时间`</div>
-            <div>指数字段：`index` 或 `风扰指数`</div>
+            <div>首行：距接地时间</div>
+            <div>首列：字段名称</div>
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -109,7 +109,7 @@ function FileUploadPanel({
               <thead className="bg-[#efe7da] text-muted-foreground">
                 <tr>
                   {templateColumns.map((column) => (
-                    <th key={column} className="border-b border-white/80 px-3 py-3 font-semibold">
+                    <th key={column || 'blank-header'} className="border-b border-white/80 px-3 py-3 font-semibold">
                       {column}
                     </th>
                   ))}
@@ -118,8 +118,8 @@ function FileUploadPanel({
               <tbody>
                 {templatePreviewRows.map((row, rowIndex) => (
                   <tr key={rowIndex} className="odd:bg-white/55">
-                    {row.map((cell) => (
-                      <td key={cell} className="border-b border-white/70 px-3 py-3 font-mono text-[12px] sm:text-[13px]">
+                    {row.map((cell, cellIndex) => (
+                      <td key={`${row[0]}-${cellIndex}`} className="border-b border-white/70 px-3 py-3 font-mono text-[12px] sm:text-[13px]">
                         {cell}
                       </td>
                     ))}
@@ -130,8 +130,8 @@ function FileUploadPanel({
           </div>
 
           <div className="mt-4 space-y-2 text-sm leading-6 text-muted-foreground">
-            <div>当前前端演示只要求 `time / index`，即可生成曲线。</div>
-            <div>`flightNo`、`phase`、`ciLower`、`ciUpper` 为后续统一 Excel 模板预留。</div>
+            <div>新版模板以距接地时间作为列索引，上传后会自动转换为内部秒级曲线数据</div>
+            <div>`flightNo`、`phase` 为样本说明字段，`index`、`ciLower`、`ciUpper` 用于生成曲线</div>
           </div>
 
           <div className="mt-4 grid gap-2 rounded-[22px] border border-border/70 bg-white/74 p-4 text-sm text-muted-foreground">
@@ -147,34 +147,34 @@ function FileUploadPanel({
 
       <div className="mt-6 flex flex-col gap-3 rounded-[24px] border border-border/70 bg-white/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-base font-semibold text-foreground">Example</div>
+          <div className="text-base font-semibold text-foreground">示例演示</div>
           <div className="mt-1 text-sm text-muted-foreground">不上传文件，使用内置示例数据进入分析界面</div>
         </div>
-        <button type="button" onClick={onUseExample} className="action-secondary h-11">
-          <Sparkles size={16} />
-          Example
+        <button type="button" onClick={onUseExample} className="action-primary h-11">
+          <Play size={16} />
+          展开示例演示
         </button>
       </div>
     </section>
   );
 }
 
-// The preview follows the future unified Excel template direction, while the current demo still only requires time/index.
-const templateColumns = ['flightNo', 'phase', 'time', 'index', 'ciLower', 'ciUpper'];
+const templateColumns = ['距接地时间/秒', '60', '59', '58', '57', '56'];
 
 const templatePreviewRows = [
-  ['MU2431', 'approach', '0', '28', '24', '32'],
-  ['MU2431', 'approach', '1', '30.1', '26.5', '33.7'],
-  ['MU2431', 'approach', '2', '32', '28.2', '35.8'],
+  ['flightNo', 'MU2431', 'MU2431', 'MU2431', 'MU2431', 'MU2431'],
+  ['phase', 'approach', 'approach', 'approach', 'approach', 'approach'],
+  ['index', '0.28', '0.30', '0.32', '0.33', '0.35'],
+  ['ciLower', '0.24', '0.27', '0.28', '0.30', '0.31'],
+  ['ciUpper', '0.32', '0.34', '0.36', '0.37', '0.39'],
 ];
 
 const fieldDescriptions = [
-  { field: 'flightNo', label: '航班号' },
-  { field: 'phase', label: '阶段' },
-  { field: 'time', label: '时间秒' },
-  { field: 'index', label: '风扰指数' },
-  { field: 'ciLower', label: '置信下界' },
-  { field: 'ciUpper', label: '置信上界' },
+  { field: 'flightNo', label: '航班号，每列对应一个样本' },
+  { field: 'phase', label: '阶段，每列对应一个样本' },
+  { field: 'index', label: '风扰指数，范围 0-1' },
+  { field: 'ciLower', label: '置信下界，范围 0-1' },
+  { field: 'ciUpper', label: '置信上界，范围 0-1' },
 ];
 
 export default FileUploadPanel;

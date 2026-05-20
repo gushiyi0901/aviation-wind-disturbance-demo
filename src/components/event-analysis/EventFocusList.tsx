@@ -1,5 +1,6 @@
 import type { EventAnalysisAirport } from '../../data/mockEventAnalysisData';
 import { eventQuadrantMeta } from '../../data/mockEventAnalysisData';
+import { formatWindDisturbanceIndex } from '../../utils/indexScale';
 
 type EventFocusListProps = {
   airports: EventAnalysisAirport[];
@@ -10,8 +11,8 @@ type EventFocusListProps = {
 function EventFocusList({ airports, selectedAirportId, onSelect }: EventFocusListProps) {
   const ranked = [...airports]
     .sort((a, b) => {
-      const scoreA = a.averageIndex * 0.58 + a.eventCount * 0.42 + a.correlationScore * 10;
-      const scoreB = b.averageIndex * 0.58 + b.eventCount * 0.42 + b.correlationScore * 10;
+      const scoreA = a.averageIndex * 58 + a.eventCount * 0.42 + a.correlationScore * 10;
+      const scoreB = b.averageIndex * 58 + b.eventCount * 0.42 + b.correlationScore * 10;
       return scoreB - scoreA;
     })
     .slice(0, 6);
@@ -49,7 +50,7 @@ function EventFocusList({ airports, selectedAirportId, onSelect }: EventFocusLis
                   </div>
 
                   <div className="mt-3 grid grid-cols-[1fr_auto_auto] gap-3 text-sm text-muted-foreground">
-                    <span>平均风扰指数 {airport.averageIndex}</span>
+                    <span>平均风扰指数 {formatWindDisturbanceIndex(airport.averageIndex)}</span>
                     <span>降落事件数 {airport.eventCount}</span>
                     <span>评分 {airport.correlationScore.toFixed(2)}</span>
                   </div>

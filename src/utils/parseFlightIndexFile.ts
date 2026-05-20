@@ -7,6 +7,8 @@ export type ParsedFlightIndexRow = {
   windDirection?: number;
 };
 
+const normalizeIndexValue = (value: number) => clamp(value <= 1 ? value : value / 100, 0, 1);
+
 type ParseFlightIndexFileResult = {
   rows: ParsedFlightIndexRow[];
   fileName: string;
@@ -38,14 +40,14 @@ const WIND_DIRECTION_HEADERS = new Set(['winddirection', '风向']);
 export async function parseFlightIndexFile(file: File): Promise<ParseFlightIndexFileResult> {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
   if (!SUPPORTED_EXTENSIONS.includes(extension)) {
-    throw new Error('文件格式暂不支持，请上传 CSV 或 Excel。');
+    throw new Error('文件格式暂不支持，请上传 CSV 或 Excel');
   }
 
   const matrix = extension === 'csv' ? parseCsvText(await file.text()) : await parseExcelFile(file);
   const rows = normalizeMatrixToRows(matrix);
 
   if (rows.length < 5) {
-    throw new Error('有效数据过少，请至少提供 5 个采样点。');
+    throw new Error('有效数据过少，请至少提供 5 个采样点');
   }
 
   return {
@@ -57,13 +59,13 @@ export async function parseFlightIndexFile(file: File): Promise<ParseFlightIndex
 async function parseExcelFile(file: File): Promise<unknown[][]> {
   await ensureXlsxLoaded();
   if (!window.XLSX) {
-    throw new Error('Excel 解析组件加载失败，请稍后重试。');
+    throw new Error('Excel 解析组件加载失败，请稍后重试');
   }
 
   const workbook = window.XLSX.read(await file.arrayBuffer(), { type: 'array', raw: true });
   const firstSheetName = workbook.SheetNames[0];
   if (!firstSheetName) {
-    throw new Error('文件为空，请检查后重新上传。');
+    throw new Error('文件为空，请检查后重新上传');
   }
 
   const matrix = window.XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], {
@@ -103,7 +105,7 @@ function waitForScript(script: HTMLScriptElement) {
     }
 
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Excel 解析组件加载失败，请稍后重试。'));
+    script.onerror = () => reject(new Error('Excel 解析组件加载失败，请稍后重试'));
   });
 }
 
@@ -112,7 +114,7 @@ function parseCsvText(text: string): unknown[][] {
   const lines = normalized.split(/\r?\n/).filter((line) => line.trim().length > 0);
 
   if (!lines.length) {
-    throw new Error('文件为空，请检查后重新上传。');
+    throw new Error('文件为空，请检查后重新上传');
   }
 
   return lines.map(parseCsvLine);
@@ -155,7 +157,12 @@ function normalizeMatrixToRows(matrix: unknown[][]): ParsedFlightIndexRow[] {
     .filter((row) => row.some((cell) => String(cell ?? '').trim() !== ''));
 
   if (!meaningfulRows.length) {
-    throw new Error('文件为空，请检查后重新上传。');
+    throw new Error('文件为空，请检查后重新上传');
+  }
+
+  const transposedRows = normalizeTransposedMatrixToRows(meaningfulRows);
+  if (transposedRows) {
+    return transposedRows;
   }
 
   const firstRow = meaningfulRows[0];
@@ -193,10 +200,10 @@ function normalizeMatrixToRows(matrix: unknown[][]): ParsedFlightIndexRow[] {
       indexColumn = 1;
       dataRows = meaningfulRows.slice(1);
     } else {
-      throw new Error('未识别到时间和风扰指数列。');
+      throw new Error('未识别到时间和风扰指数列');
     }
   } else if (firstRow.length < 2) {
-    throw new Error('未识别到时间和风扰指数列。');
+    throw new Error('未识别到时间和风扰指数列');
   }
 
   const rows: ParsedFlightIndexRow[] = [];
@@ -213,20 +220,20 @@ function normalizeMatrixToRows(matrix: unknown[][]): ParsedFlightIndexRow[] {
     const index = Number(rawIndex);
 
     if (!Number.isFinite(time)) {
-      throw new Error('时间列存在无效数据，请检查后重新上传。');
+      throw new Error('时间列存在无效数据，请检查后重新上传');
     }
 
     if (!Number.isFinite(index)) {
-      throw new Error('风扰指数列存在无效数据，请检查后重新上传。');
+      throw new Error('风扰指数列存在无效数据，请检查后重新上传');
     }
 
     const parsedRow: ParsedFlightIndexRow = {
       time,
-      index: clamp(index, 0, 100),
+      index: normalizeIndexValue(index),
     };
 
-    assignOptionalNumber(parsedRow, 'ciLower', row[optionalColumns.ciLower], 0, 100);
-    assignOptionalNumber(parsedRow, 'ciUpper', row[optionalColumns.ciUpper], 0, 100);
+    assignOptionalIndex(parsedRow, 'ciLower', row[optionalColumns.ciLower]);
+    assignOptionalIndex(parsedRow, 'ciUpper', row[optionalColumns.ciUpper]);
     assignOptionalNumber(parsedRow, 'windSpeed', row[optionalColumns.windSpeed], 0, 80);
     assignOptionalNumber(parsedRow, 'windDirection', row[optionalColumns.windDirection], 0, 360);
 
@@ -234,10 +241,98 @@ function normalizeMatrixToRows(matrix: unknown[][]): ParsedFlightIndexRow[] {
   }
 
   if (!rows.length) {
-    throw new Error('文件为空，请检查后重新上传。');
+    throw new Error('文件为空，请检查后重新上传');
   }
 
   return rows.sort((left, right) => left.time - right.time);
+}
+
+function normalizeTransposedMatrixToRows(matrix: unknown[][]): ParsedFlightIndexRow[] | null {
+  const firstRow = matrix[0] ?? [];
+  const sampleHeaders = firstRow.slice(1);
+  const sampleTimes = sampleHeaders.map(parseTouchdownHeader);
+
+  if (!sampleTimes.length || sampleTimes.some((value) => value === null)) {
+    return null;
+  }
+
+  const fieldRows = new Map<string, unknown[]>();
+  for (const row of matrix.slice(1)) {
+    const fieldName = normalizeHeader(row[0]);
+    if (fieldName) {
+      fieldRows.set(fieldName, row.slice(1));
+    }
+  }
+
+  const indexRow = findTransposedFieldRow(fieldRows, INDEX_HEADERS);
+  if (!indexRow) {
+    return null;
+  }
+
+  const maxRemainingTime = Math.max(...(sampleTimes as number[]));
+  const ciLowerRow = findTransposedFieldRow(fieldRows, CI_LOWER_HEADERS);
+  const ciUpperRow = findTransposedFieldRow(fieldRows, CI_UPPER_HEADERS);
+  const windSpeedRow = findTransposedFieldRow(fieldRows, WIND_SPEED_HEADERS);
+  const windDirectionRow = findTransposedFieldRow(fieldRows, WIND_DIRECTION_HEADERS);
+
+  const rows = sampleTimes.map((remainingTime, index) => {
+    const rawIndex = Number(indexRow[index]);
+    if (!Number.isFinite(rawIndex)) {
+      throw new Error('风扰指数行存在无效数据，请检查后重新上传');
+    }
+
+    const parsedRow: ParsedFlightIndexRow = {
+      time: maxRemainingTime - remainingTime!,
+      index: normalizeIndexValue(rawIndex),
+    };
+
+    assignOptionalIndex(parsedRow, 'ciLower', ciLowerRow?.[index]);
+    assignOptionalIndex(parsedRow, 'ciUpper', ciUpperRow?.[index]);
+    assignOptionalNumber(parsedRow, 'windSpeed', windSpeedRow?.[index], 0, 80);
+    assignOptionalNumber(parsedRow, 'windDirection', windDirectionRow?.[index], 0, 360);
+
+    return parsedRow;
+  });
+
+  return rows.sort((left, right) => left.time - right.time);
+}
+
+function findTransposedFieldRow(fieldRows: Map<string, unknown[]>, headers: Set<string>) {
+  for (const header of headers) {
+    const row = fieldRows.get(header);
+    if (row) {
+      return row;
+    }
+  }
+
+  return null;
+}
+
+function parseTouchdownHeader(value: unknown) {
+  const text = String(value ?? '').trim();
+
+  if (!text) {
+    return null;
+  }
+
+  const match = text.match(/距接地\s*(\d+(?:\.\d+)?)\s*秒?/);
+  if (match) {
+    return Number(match[1]);
+  }
+
+  const numericValue = Number(text);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function assignOptionalIndex<Key extends 'ciLower' | 'ciUpper'>(row: ParsedFlightIndexRow, key: Key, value: unknown) {
+  if (String(value ?? '').trim() === '') {
+    return;
+  }
+
+  const numericValue = Number(value);
+  if (Number.isFinite(numericValue)) {
+    row[key] = normalizeIndexValue(numericValue);
+  }
 }
 
 function normalizeHeader(value: unknown) {

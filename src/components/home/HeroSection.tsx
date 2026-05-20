@@ -3,7 +3,7 @@ import { Activity, BarChart3, Compass, Gauge, MapPin, Radar, Wind } from 'lucide
 const metricRows = [
   ['当前模拟航班', 'CES-2026'],
   ['飞行阶段', '进近 / 1000 ft 以下'],
-  ['当前风扰指数', '76'],
+  ['当前风扰指数', '0.76'],
   ['风险等级', '偏高'],
   ['风速', '18 kt'],
   ['风向', '236°'],

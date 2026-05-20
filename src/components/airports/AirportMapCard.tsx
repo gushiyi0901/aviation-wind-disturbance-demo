@@ -9,6 +9,7 @@ import {
   provincePaths,
   southChinaSeaInsetFrame,
 } from '../../utils/chinaTopoMap';
+import { formatWindDisturbanceIndex, normalizeWindDisturbanceIndex } from '../../utils/indexScale';
 
 type AirportMapCardProps = {
   airports: AirportRiskProfile[];
@@ -128,7 +129,7 @@ function AirportMapCard({ airports, selectedAirportId, onSelect }: AirportMapCar
                   }}
                   role="button"
                   tabIndex={0}
-                  aria-label={`${airport.name}，当前指数 ${airport.currentIndex}`}
+                  aria-label={`${airport.name}，当前指数 ${formatWindDisturbanceIndex(airport.currentIndex)}`}
                 >
                   <circle r={glowRadius} fill={glowColor} />
                   {isSelected && <circle r={size / 2 + 5} fill="none" stroke="#2f493b" strokeWidth={3.5} />}
@@ -148,7 +149,7 @@ function AirportMapCard({ airports, selectedAirportId, onSelect }: AirportMapCar
                 {hoveredAirport.name}
               </div>
               <div className="mt-2 text-sm text-muted-foreground">
-                当前指数 {hoveredAirport.currentIndex} · 风险映射 {normalizeRisk(hoveredAirport.currentIndex).toFixed(2)}
+                当前指数 {formatWindDisturbanceIndex(hoveredAirport.currentIndex)} · 风险映射 {normalizeRisk(hoveredAirport.currentIndex).toFixed(2)}
               </div>
             </div>
           )}
@@ -221,7 +222,7 @@ function AirportLabel({
 }
 
 function normalizeRisk(index: number) {
-  return Math.min(1, Math.max(0, index / 100));
+  return normalizeWindDisturbanceIndex(index);
 }
 
 function riskColor(value: number) {

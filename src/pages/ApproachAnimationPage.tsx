@@ -13,6 +13,7 @@ import {
 } from '../utils/buildApproachDataFromUpload';
 import { parseFlightIndexFile } from '../utils/parseFlightIndexFile';
 import { riskLevelMeta } from '../utils/riskLevel';
+import { formatWindDisturbanceIndex } from '../utils/indexScale';
 
 type AnalysisMeta = {
   flight: string;
@@ -232,7 +233,7 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
                         </div>
                       </div>
                       <div className="mt-4 text-sm text-muted-foreground">
-                        指数 {item.point.turbulenceIndex} / 高度 {item.point.altitude} ft
+                        指数 {formatWindDisturbanceIndex(item.point.turbulenceIndex)} / 高度 {item.point.altitude} ft
                       </div>
                     </article>
                   );

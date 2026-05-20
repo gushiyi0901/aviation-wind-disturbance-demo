@@ -20,7 +20,7 @@ export type EventAnalysisAirport = {
 };
 
 export const eventScatterThresholds = {
-  averageIndex: 60,
+  averageIndex: 0.6,
   eventCount: 52,
 };
 
@@ -73,7 +73,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'kunming-changshui',
     name: '昆明长水',
-    averageIndex: 72,
+    averageIndex: 0.72,
     eventCount: 68,
     quadrant: '重点关注',
     highRiskPeriod: '春季午后',
@@ -89,7 +89,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'lhasa-gongga',
     name: '拉萨贡嘎',
-    averageIndex: 76,
+    averageIndex: 0.76,
     eventCount: 61,
     quadrant: '重点关注',
     highRiskPeriod: '冬春交替',
@@ -105,7 +105,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'urumqi-diwopu',
     name: '乌鲁木齐地窝堡',
-    averageIndex: 67,
+    averageIndex: 0.67,
     eventCount: 44,
     quadrant: '运行韧性较强',
     highRiskPeriod: '冬季夜间',
@@ -121,7 +121,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'guangzhou-baiyun',
     name: '广州白云',
-    averageIndex: 64,
+    averageIndex: 0.64,
     eventCount: 55,
     quadrant: '重点关注',
     highRiskPeriod: '夏季傍晚',
@@ -137,7 +137,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'shanghai-pudong',
     name: '上海浦东',
-    averageIndex: 57,
+    averageIndex: 0.57,
     eventCount: 63,
     quadrant: '非风扰主导',
     highRiskPeriod: '梅雨季晨间',
@@ -153,7 +153,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'qingdao-jiaodong',
     name: '青岛胶东',
-    averageIndex: 53,
+    averageIndex: 0.53,
     eventCount: 54,
     quadrant: '非风扰主导',
     highRiskPeriod: '秋季午后',
@@ -169,7 +169,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'beijing-capital',
     name: '北京首都',
-    averageIndex: 49,
+    averageIndex: 0.49,
     eventCount: 43,
     quadrant: '稳定运行',
     highRiskPeriod: '春季白天',
@@ -185,7 +185,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'chengdu-tianfu',
     name: '成都天府',
-    averageIndex: 58,
+    averageIndex: 0.58,
     eventCount: 40,
     quadrant: '稳定运行',
     highRiskPeriod: '夏季午后',
@@ -201,7 +201,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'shenzhen-baoan',
     name: '深圳宝安',
-    averageIndex: 46,
+    averageIndex: 0.46,
     eventCount: 58,
     quadrant: '非风扰主导',
     highRiskPeriod: '夏秋雷雨季',
@@ -217,7 +217,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'chongqing-jiangbei',
     name: '重庆江北',
-    averageIndex: 62,
+    averageIndex: 0.62,
     eventCount: 47,
     quadrant: '运行韧性较强',
     highRiskPeriod: '秋季夜航时段',
@@ -233,7 +233,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'guiyang-longdongbao',
     name: '贵阳龙洞堡',
-    averageIndex: 68,
+    averageIndex: 0.68,
     eventCount: 39,
     quadrant: '运行韧性较强',
     highRiskPeriod: '春季夜间',
@@ -249,7 +249,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'xian-xianyang',
     name: '西安咸阳',
-    averageIndex: 54,
+    averageIndex: 0.54,
     eventCount: 45,
     quadrant: '稳定运行',
     highRiskPeriod: '春季午后',

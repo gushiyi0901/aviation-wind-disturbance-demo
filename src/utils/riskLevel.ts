@@ -1,15 +1,17 @@
 export type RiskLevel = '低' | '中' | '偏高' | '高';
 
 export const getRiskLevel = (index: number): RiskLevel => {
-  if (index >= 78) {
+  const normalizedIndex = index <= 1 ? index : index / 100;
+
+  if (normalizedIndex >= 0.78) {
     return '高';
   }
 
-  if (index >= 60) {
+  if (normalizedIndex >= 0.6) {
     return '偏高';
   }
 
-  if (index >= 38) {
+  if (normalizedIndex >= 0.38) {
     return '中';
   }
 

@@ -544,11 +544,17 @@ export const airportRiskProfiles: AirportRiskProfile[] = airportSeeds.map((airpo
 
   return {
     ...airport,
+    currentIndex: normalizeAirportIndex(airport.currentIndex),
+    annualAverage: normalizeAirportIndex(airport.annualAverage),
     trend: {
-      month: buildSeries(12, base, amplitude * 0.85, phase, 4, 3),
-      week: buildSeries(52, base, amplitude * 0.5, phase, 3, 41),
-      day: buildSeries(30, base + 1, amplitude * 0.42, phase, 2, 21),
-      hour: buildSeries(7, base + 3, amplitude, phase, 1, 4),
+      month: buildSeries(12, base, amplitude * 0.85, phase, 4, 3).map(normalizeAirportIndex),
+      week: buildSeries(52, base, amplitude * 0.5, phase, 3, 41).map(normalizeAirportIndex),
+      day: buildSeries(30, base + 1, amplitude * 0.42, phase, 2, 21).map(normalizeAirportIndex),
+      hour: buildSeries(7, base + 3, amplitude, phase, 1, 4).map(normalizeAirportIndex),
     },
   };
 });
+
+function normalizeAirportIndex(value: number) {
+  return Number((value / 100).toFixed(2));
+}

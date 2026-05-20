@@ -160,9 +160,10 @@ function ApproachChart({
         <div>
           <h2 className="text-2xl font-bold text-foreground">实时风扰指数对比</h2>
           <div className="mt-3 flex flex-wrap gap-4 text-sm text-muted-foreground">
-            <LegendItem label="当前进近" color="#1f5f8b" />
-            <LegendItem label={`${dimensionLabel}均水平`} color="#8a6c37" dashed />
-            <LegendItem label="95%置信区间" color="#d7c5b7" thick />
+            <LegendItem label="样本进近曲线" color="#1f5f8b" />
+            <LegendItem label={`历史${dimensionLabel}均值基准`} color="#8a6c37" dashed />
+            <LegendItem label="置信区间带" color="#d7c5b7" thick />
+            <LegendItem label="高风险节点" color="#b56b4a" marker />
           </div>
         </div>
 
@@ -284,7 +285,15 @@ function ApproachChart({
             })}
 
             <g>
-              <text x={MARGIN.left} y={WIND_BAND_TOP - 12} fontSize="15" fontWeight={600} fill="#303a33">
+              <text
+                x={34}
+                y={WIND_BAND_TOP + WIND_BAND_HEIGHT / 2}
+                textAnchor="middle"
+                fontSize="17"
+                fontWeight={600}
+                fill="#303a33"
+                transform={`rotate(-90 34 ${WIND_BAND_TOP + WIND_BAND_HEIGHT / 2})`}
+              >
                 风场变化
               </text>
               <line x1={MARGIN.left} x2={CHART_WIDTH - MARGIN.right} y1={WIND_BAND_TOP + WIND_BAND_HEIGHT / 2} y2={WIND_BAND_TOP + WIND_BAND_HEIGHT / 2} stroke="#e1ddd3" />
@@ -327,8 +336,8 @@ function ApproachChart({
               <div className="text-sm font-semibold text-foreground">距接地 {hoverPoint.remainingTime} 秒</div>
               <div className="mt-3 space-y-2 text-sm text-muted-foreground">
                 <InfoRow label="高度" value={`${hoverPoint.altitude} ft`} />
-                <InfoRow label="当前进近" value={formatIndex(hoverPoint.displayIndex)} icon={<Gauge size={14} className="text-accent" />} />
-                <InfoRow label={`${dimensionLabel}均水平`} value={formatIndex(hoverPoint.averageIndex)} />
+                <InfoRow label="样本进近曲线" value={formatIndex(hoverPoint.displayIndex)} icon={<Gauge size={14} className="text-accent" />} />
+                <InfoRow label={`历史${dimensionLabel}均值基准`} value={formatIndex(hoverPoint.averageIndex)} />
                 <InfoRow label="置信区间" value={`${formatIndex(hoverPoint.confidenceLower)} - ${formatIndex(hoverPoint.confidenceUpper)}`} />
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-2">
@@ -427,22 +436,44 @@ function normalizeIndexForDisplay(value: number) {
 
 function buildConfidenceInterval(point: ApproachPoint, data: ApproachPoint[], index: number, displayIndex: number) {
   if (Number.isFinite(point.ciLower) && Number.isFinite(point.ciUpper)) {
-    return {
+    return widenConfidenceInterval({
       lower: normalizeIndexForDisplay(point.ciLower),
       upper: normalizeIndexForDisplay(point.ciUpper),
-    };
+      center: displayIndex,
+      minHalfWidth: 0.09,
+    });
   }
 
-  // Front-end demonstration only: this approximates a 95% interval from recent local volatility and is not real statistical inference.
+  // Front-end demonstration only: this approximates an interval from recent local volatility and is not real statistical inference.
   const start = Math.max(0, index - 4);
   const recent = data.slice(start, index + 1).map((item) => normalizeIndexForDisplay(item.turbulenceIndex));
   const deltas = recent.slice(1).map((value, deltaIndex) => Math.abs(value - recent[deltaIndex]));
   const volatility = deltas.length ? deltas.reduce((sum, value) => sum + value, 0) / deltas.length : 0;
-  const width = clamp(0.045 + volatility * 0.7 + displayIndex * 0.035, 0.04, 0.18);
+  const width = clamp(0.09 + volatility * 1.05 + displayIndex * 0.055, 0.08, 0.24);
 
   return {
     lower: clamp(displayIndex - width, 0, 1),
     upper: clamp(displayIndex + width, 0, 1),
+  };
+}
+
+function widenConfidenceInterval({
+  lower,
+  upper,
+  center,
+  minHalfWidth,
+}: {
+  lower: number;
+  upper: number;
+  center: number;
+  minHalfWidth: number;
+}) {
+  const midpoint = (lower + upper) / 2 || center;
+  const halfWidth = Math.max((upper - lower) / 2, minHalfWidth);
+
+  return {
+    lower: clamp(midpoint - halfWidth, 0, 1),
+    upper: clamp(midpoint + halfWidth, 0, 1),
   };
 }
 
@@ -544,17 +575,33 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-function LegendItem({ label, color, dashed = false, thick = false }: { label: string; color: string; dashed?: boolean; thick?: boolean }) {
+function LegendItem({
+  label,
+  color,
+  dashed = false,
+  thick = false,
+  marker = false,
+}: {
+  label: string;
+  color: string;
+  dashed?: boolean;
+  thick?: boolean;
+  marker?: boolean;
+}) {
   return (
     <div className="inline-flex items-center gap-2">
-      <span
-        className={`${thick ? 'h-2.5' : 'h-0'} block w-10 rounded-full border-t-[3px]`}
-        style={{
-          backgroundColor: thick ? color : 'transparent',
-          borderColor: color,
-          borderStyle: dashed ? 'dashed' : 'solid',
-        }}
-      />
+      {marker ? (
+        <span className="block h-3 w-3 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: color }} />
+      ) : (
+        <span
+          className={`${thick ? 'h-2.5' : 'h-0'} block w-10 rounded-full border-t-[3px]`}
+          style={{
+            backgroundColor: thick ? color : 'transparent',
+            borderColor: color,
+            borderStyle: dashed ? 'dashed' : 'solid',
+          }}
+        />
+      )}
       <span>{label}</span>
     </div>
   );

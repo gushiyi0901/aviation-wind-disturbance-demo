@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { AirportRiskProfile, TimeScale } from '../../data/mockAirportRiskData';
 import { airportTrendLabels } from '../../data/mockAirportRiskData';
 import { airportRiskMeta } from '../../utils/airportRiskMeta';
+import { formatWindDisturbanceIndex } from '../../utils/indexScale';
 
 type ChartPoint = {
   x: number;
@@ -56,7 +57,7 @@ function AirportTrendPanel({
 
     const mappedPoints = values.map((value, index) => {
       const x = chart.margin.left + (index / Math.max(values.length - 1, 1)) * innerWidth;
-      const y = chart.margin.top + ((100 - value) / 100) * innerHeight;
+      const y = chart.margin.top + (1 - value) * innerHeight;
       return { x, y, value, label: labels[index], index };
     });
 
@@ -67,7 +68,7 @@ function AirportTrendPanel({
       pathD: linePath,
       areaD: areaPath,
       points: mappedPoints,
-      yTicks: [0, 20, 40, 60, 80, 100],
+      yTicks: [0, 0.25, 0.5, 0.75, 1],
     };
   }, [labels, values]);
 
@@ -143,7 +144,7 @@ function AirportTrendPanel({
             />
 
             {yTicks.map((tick) => {
-              const y = chart.margin.top + ((100 - tick) / 100) * (chart.height - chart.margin.top - chart.margin.bottom);
+              const y = chart.margin.top + (1 - tick) * (chart.height - chart.margin.top - chart.margin.bottom);
               return (
                 <g key={tick}>
                   <line
@@ -155,7 +156,7 @@ function AirportTrendPanel({
                     strokeDasharray="4 6"
                   />
                   <text x={chart.margin.left - 16} y={y + 5} textAnchor="end" fontSize="15" fill="#4f5a52">
-                    {tick}
+                    {tick.toFixed(2)}
                   </text>
                 </g>
               );
@@ -173,7 +174,7 @@ function AirportTrendPanel({
             <path d={pathD} fill="none" stroke="url(#airportTrendLine)" strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round" />
 
             {points.map((point) => {
-              const isHigh = point.value >= 60;
+              const isHigh = point.value >= 0.6;
               return (
                 <g key={`point-${point.index}`}>
                   {isHigh && <circle cx={point.x} cy={point.y} r="9" fill={tone.glowColor} />}
@@ -232,7 +233,7 @@ function AirportTrendPanel({
               <div className="font-bold text-foreground">{hoveredEvent.label} 风险事件</div>
               <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-muted-foreground">
                 <span>风扰指数</span>
-                <strong className="text-right text-foreground">{hoveredEvent.value}</strong>
+                <strong className="text-right text-foreground">{formatWindDisturbanceIndex(hoveredEvent.value)}</strong>
                 <span>事件类型</span>
                 <strong className="text-right text-foreground">{hoveredEvent.type}</strong>
                 <span>事件等级</span>
@@ -277,7 +278,7 @@ function buildTrendEvents(points: ChartPoint[], airportId: string, scale: TimeSc
     return {
       ...point,
       type: eventTypes[(seed + order) % eventTypes.length],
-      level: point.value >= 68 ? '高' : '较高',
+      level: point.value >= 0.68 ? '高' : '较高',
     };
   }).sort((left, right) => left.index - right.index);
 }

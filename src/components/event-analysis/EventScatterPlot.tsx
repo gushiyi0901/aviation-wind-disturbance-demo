@@ -1,6 +1,7 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import type { EventAnalysisAirport } from '../../data/mockEventAnalysisData';
 import { eventQuadrantMeta, eventScatterThresholds } from '../../data/mockEventAnalysisData';
+import { formatWindDisturbanceIndex } from '../../utils/indexScale';
 
 type EventScatterPlotProps = {
   airports: EventAnalysisAirport[];
@@ -15,8 +16,8 @@ const MARGIN = { top: 32, right: 34, bottom: 74, left: 78 };
 function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatterPlotProps) {
   const [hoveredAirportId, setHoveredAirportId] = useState<string | null>(null);
 
-  const xMin = Math.min(...airports.map((airport) => airport.averageIndex)) - 6;
-  const xMax = Math.max(...airports.map((airport) => airport.averageIndex)) + 6;
+  const xMin = Math.max(0, Math.min(...airports.map((airport) => airport.averageIndex)) - 0.06);
+  const xMax = Math.min(1, Math.max(...airports.map((airport) => airport.averageIndex)) + 0.06);
   const yMin = Math.max(0, Math.min(...airports.map((airport) => airport.eventCount)) - 8);
   const yMax = Math.max(...airports.map((airport) => airport.eventCount)) + 8;
   const innerWidth = WIDTH - MARGIN.left - MARGIN.right;
@@ -53,7 +54,7 @@ function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatte
       }
     : undefined;
 
-  const xTicks = [45, 55, 65, 75];
+  const xTicks = [0.45, 0.55, 0.65, 0.75];
   const yTicks = [35, 45, 55, 65, 75];
 
   return (
@@ -74,7 +75,7 @@ function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatte
               <g key={tick}>
                 <line x1={MARGIN.left} x2={WIDTH - MARGIN.right} y1={y} y2={y} stroke="#d8cdbb" strokeDasharray="4 6" />
                 <text x={MARGIN.left - 16} y={y + 4} textAnchor="end" fontSize="12" fill="#6d756e">
-                  {tick}
+                  {tick.toFixed(2)}
                 </text>
               </g>
             );
@@ -171,7 +172,7 @@ function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatte
             <div className="mt-3 space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center justify-between">
                 <span>平均风扰指数</span>
-                <span className="font-semibold text-foreground">{hoveredPoint.averageIndex}</span>
+                <span className="font-semibold text-foreground">{formatWindDisturbanceIndex(hoveredPoint.averageIndex)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>降落事件数</span>
