@@ -5,8 +5,8 @@ function HeroSection() {
     <section id="overview" className="px-4 pb-10 pt-16 sm:px-6 sm:pt-20 lg:px-8 lg:pb-12 lg:pt-28">
       <div className="mx-auto flex max-w-[1280px] flex-col items-center">
         <div className="w-full max-w-5xl">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-white/80 bg-white/72 text-accent shadow-soft ring-1 ring-accent/10 backdrop-blur-xl">
-            <Plane size={28} strokeWidth={1.9} />
+          <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-full border border-white/85 bg-white/78 text-white shadow-[0_8px_20px_rgba(255,255,255,0.18),0_2px_6px_rgba(92,124,108,0.08)] ring-1 ring-white/65 backdrop-blur-lg">
+            <Plane size={20} strokeWidth={2} />
           </div>
 
           <h1 className="mx-auto flex max-w-4xl flex-col gap-4 text-center">
