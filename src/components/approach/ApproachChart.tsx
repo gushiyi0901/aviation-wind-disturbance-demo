@@ -159,12 +159,7 @@ function ApproachChart({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">实时风扰指数对比</h2>
-          <div className="mt-3 flex flex-wrap gap-4 text-sm text-muted-foreground">
-            <LegendItem label="样本进近曲线" color="#1f5f8b" />
-            <LegendItem label={`历史${dimensionLabel}均值基准`} color="#8a6c37" dashed />
-            <LegendItem label="置信区间带" color="#d7c5b7" thick />
-            <LegendItem label="高风险节点" color="#b56b4a" marker />
-          </div>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">曲线、基准与置信区间随回放进度同步展示。</p>
         </div>
 
         <button type="button" onClick={onReplay} className="action-secondary">
@@ -181,6 +176,15 @@ function ApproachChart({
       </div>
 
       <div className="mt-5 rounded-[18px] border border-border/75 bg-white/90 p-4 sm:p-5">
+        <div className="pb-4">
+          <h3 className="text-center text-lg font-semibold leading-7 text-foreground sm:text-xl">单次进近风扰指数动态演示</h3>
+          <div className="mx-auto mt-4 flex max-w-4xl flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            <LegendItem label="样本进近曲线" color="#1f5f8b" />
+            <LegendItem label="历史月均值基准" color="#8a6c37" dashed />
+            <LegendItem label="置信区间带" color="#d7c5b7" thick />
+            <LegendItem label="高风险节点" color="#b56b4a" marker />
+          </div>
+        </div>
         <div className="relative">
           <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} className="h-[430px] w-full xl:h-[455px]">
             {yTicks.map((tick) => {

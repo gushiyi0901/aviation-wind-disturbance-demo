@@ -156,13 +156,14 @@ function LoginPage({ onLoginSuccess }: LoginPageProps) {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
+    <main className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
       <section className="grid w-full max-w-[1120px] gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.72fr)] lg:items-center">
-        <div className="surface-panel px-6 py-7 sm:px-8 lg:px-10 lg:py-12">
-          <h1 className="text-3xl font-bold leading-[1.28] text-foreground sm:text-4xl sm:leading-[1.24] lg:text-[3.4rem] lg:leading-[1.18]">
-            进近风扰风险指数智能展示平台
+        <div className="surface-panel px-6 py-7 text-center sm:px-8 lg:px-10 lg:py-10 lg:text-left">
+          <h1 className="flex flex-col text-[2.35rem] font-bold leading-[1.12] text-foreground sm:text-[3rem] lg:text-[3.55rem]">
+            <span>进近风扰风险指数</span>
+            <span className="text-[#465d54]">智能展示平台</span>
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg lg:mx-0">
             民航进近阶段风扰风险可视化与运行分析 Demo
           </p>
 
