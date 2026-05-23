@@ -23,7 +23,7 @@ const airportPoints = [
 
 function FeatureModules() {
   return (
-    <section id="modules" className="px-4 pb-14 pt-6 sm:px-6 lg:px-8 lg:pb-16 lg:pt-8">
+    <section id="modules" className="px-4 pb-14 pt-36 sm:px-6 sm:pt-44 lg:px-8 lg:pb-16 lg:pt-52">
       <div className="mx-auto max-w-[1680px]">
         <div className="value-band">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
