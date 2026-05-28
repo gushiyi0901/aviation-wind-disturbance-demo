@@ -159,7 +159,6 @@ function ApproachChart({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">实时风扰指数对比</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">曲线、基准与置信区间随回放进度同步展示。</p>
         </div>
 
         <button type="button" onClick={onReplay} className="action-secondary">

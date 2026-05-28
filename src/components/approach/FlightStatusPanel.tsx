@@ -39,7 +39,6 @@ function FlightStatusPanel({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-foreground sm:text-2xl">航班状态</h2>
-          <div className="mt-1 text-sm text-muted-foreground">航班信息与阶段由当前数据源决定，仅用于展示。</div>
         </div>
         <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-accent/10 text-accent">
           <Plane size={20} />

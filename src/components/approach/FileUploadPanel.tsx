@@ -56,9 +56,7 @@ function FileUploadPanel({
 
           <div className="mt-4 grid gap-3 rounded-[24px] border border-border/70 bg-white/72 p-4 text-sm text-muted-foreground sm:grid-cols-2">
             <div>支持格式：CSV / XLSX / XLS</div>
-            <div>当前最低要求：至少 5 个采样点</div>
-            <div>首行：距接地时间</div>
-            <div>首列：字段名称</div>
+            <div>至少 5 个采样点</div>
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -129,11 +127,6 @@ function FileUploadPanel({
             </table>
           </div>
 
-          <div className="mt-4 space-y-2 text-sm leading-6 text-muted-foreground">
-            <div>新版模板以距接地时间作为列索引，上传后会自动转换为内部秒级曲线数据</div>
-            <div>`flightNo`、`phase` 为样本说明字段，`index`、`ciLower`、`ciUpper` 用于生成曲线</div>
-          </div>
-
           <div className="mt-4 grid gap-2 rounded-[22px] border border-border/70 bg-white/74 p-4 text-sm text-muted-foreground">
             {fieldDescriptions.map((item) => (
               <div key={item.field} className="grid grid-cols-[92px_minmax(0,1fr)] gap-3">
@@ -148,7 +141,7 @@ function FileUploadPanel({
       <div className="mt-6 flex flex-col gap-3 rounded-[24px] border border-border/70 bg-white/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="text-base font-semibold text-foreground">示例演示</div>
-          <div className="mt-1 text-sm text-muted-foreground">不上传文件，使用内置示例数据进入分析界面</div>
+          <div className="mt-1 text-sm text-muted-foreground">使用内置示例数据进入分析界面</div>
         </div>
         <button type="button" onClick={onUseExample} className="action-primary h-11">
           <Play size={16} />
