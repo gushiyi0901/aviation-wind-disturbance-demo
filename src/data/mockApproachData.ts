@@ -41,7 +41,7 @@ const buildApproachPoint = (time: number): ApproachPoint => {
   const windDirection = Math.round(224 + Math.sin(time / 4.5) * 9 + Math.cos(time / 6.2) * 6 + (time > 26 && time < 31 ? 7 : 0));
 
   const peak18 = Math.exp(-((time - 18) ** 2) / 6) * 18;
-  const peak28 = Math.exp(-((time - 28) ** 2) / 5) * 28;
+  const peak28 = Math.exp(-((time - 28) ** 2) / 5) * 46;
   const peak37 = Math.exp(-((time - 37) ** 2) / 8) * 17;
   const lowAltitudeLift = Math.max(0, (260 - altitude) / 14);
   const base = 26 + Math.sin(time / 4.1) * 7 + Math.cos(time / 2.7) * 4 + (1000 - altitude) / 55;

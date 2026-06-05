@@ -1,18 +1,15 @@
 import type { ReactNode } from 'react';
-import { Activity, Gauge, Navigation, Plane, SlidersHorizontal, Wind } from 'lucide-react';
-import type { AverageDimension, TimeRange } from './approachAnalysisTypes';
-import { averageDimensionOptions } from './approachAnalysisTypes';
+import { Activity, Gauge, Navigation, Plane, SlidersHorizontal, Weight, Wind } from 'lucide-react';
+import type { TimeRange } from './approachAnalysisTypes';
 import type { ApproachPoint } from '../../data/mockApproachData';
-import { riskLevelMeta } from '../../utils/riskLevel';
 import { formatWindDisturbanceIndex, indexToPercent } from '../../utils/indexScale';
 
 type FlightStatusPanelProps = {
   point: ApproachPoint;
   fallbackPoint: ApproachPoint;
+  data: ApproachPoint[];
   flight: string;
   stage: string;
-  averageDimension: AverageDimension;
-  onAverageDimensionChange: (value: AverageDimension) => void;
   availableTimeRange: TimeRange;
   selectedTimeRange: TimeRange;
   onTimeRangeChange: (value: TimeRange) => void;
@@ -21,18 +18,19 @@ type FlightStatusPanelProps = {
 function FlightStatusPanel({
   point,
   fallbackPoint,
+  data,
   flight,
   stage,
-  averageDimension,
-  onAverageDimensionChange,
   availableTimeRange,
   selectedTimeRange,
   onTimeRangeChange,
 }: FlightStatusPanelProps) {
   const displayPoint = point ?? fallbackPoint;
-  const tone = riskLevelMeta[displayPoint.riskLevel];
+  const riskState = buildPanelRiskState(displayPoint, data);
+  const tone = panelRiskMeta[riskState.category];
   const [rangeStart, rangeEnd] = selectedTimeRange;
   const [minimumTime, maximumTime] = availableTimeRange;
+  const aircraftWeight = '总重 68.5 t';
 
   return (
     <aside className="surface-card flex h-full flex-col p-5 sm:p-6">
@@ -48,6 +46,7 @@ function FlightStatusPanel({
       <div className="mt-5 grid grid-cols-2 gap-3">
         <MetricTile label="航班信息" value={flight} icon={<Plane size={15} />} />
         <MetricTile label="阶段" value={stage} icon={<Activity size={15} />} />
+        <MetricTile label="飞机重量" value={aircraftWeight} icon={<Weight size={15} />} />
         <MetricTile label="高度" value={`${displayPoint.altitude} ft`} icon={<Gauge size={15} />} />
         <MetricTile label="风扰指数" value={formatWindDisturbanceIndex(displayPoint.turbulenceIndex)} icon={<Activity size={15} />} prominent />
       </div>
@@ -59,23 +58,6 @@ function FlightStatusPanel({
         </div>
 
         <div className="mt-4">
-          <label className="text-xs font-semibold tracking-[0.12em] text-muted-foreground">平均曲线维度</label>
-          <div className="mt-2">
-            <select
-              value={averageDimension}
-              onChange={(event) => onAverageDimensionChange(event.target.value as AverageDimension)}
-              className="h-11 w-full rounded-2xl border border-border/80 bg-white/88 px-4 text-sm font-semibold text-foreground outline-none transition focus:border-accent/30"
-            >
-              {averageDimensionOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="mt-5">
           <div className="flex items-center justify-between gap-3 text-xs font-semibold tracking-[0.12em] text-muted-foreground">
             <span>时间范围</span>
             <span className="rounded-full bg-white px-3 py-1 text-[11px] text-foreground">
@@ -105,16 +87,28 @@ function FlightStatusPanel({
       <div className="mt-4 rounded-[22px] border border-border/70 bg-white/85 p-4">
         <div className="flex items-center justify-between gap-4">
           <div className="text-sm text-muted-foreground">风险等级</div>
-          <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${tone.pillClass}`}>{displayPoint.riskLevel}</span>
+          <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${tone.pillClass}`}>{tone.label}</span>
         </div>
         <div className="mt-3 h-2.5 rounded-full bg-[#eee3d4]">
           <div className={`h-2.5 rounded-full ${tone.barClass}`} style={{ width: `${normalizeProgressWidth(displayPoint.turbulenceIndex)}%` }} />
+        </div>
+        <div className="mt-2 text-xs leading-5 text-muted-foreground">
+          月均 {riskState.averageIndex.toFixed(2)} / 上2σ {riskState.upperSigmaIndex.toFixed(2)} / 置信上界 {riskState.confidenceUpper.toFixed(2)}
         </div>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
         <StatusTile icon={<Wind size={15} className="text-accent" />} label="风速" value={`${displayPoint.windSpeed} kt`} />
-        <StatusTile icon={<Navigation size={15} className="text-accent" />} label="风向" value={`${displayPoint.windDirection}°`} />
+        <StatusTile
+          icon={<Navigation size={15} className="text-accent" />}
+          label={
+            <span className="leading-tight">
+              风向（与机头夹角）
+              <span className="mt-0.5 block text-[10px] uppercase tracking-[0.08em]">Wind-Heading Angle</span>
+            </span>
+          }
+          value={`${displayPoint.windDirection}°`}
+        />
       </div>
 
       <div className="mt-3 rounded-[22px] border border-border/70 bg-white/85 p-3.5">
@@ -153,7 +147,7 @@ function StatusTile({
   value,
 }: {
   icon: ReactNode;
-  label: string;
+  label: ReactNode;
   value: string;
 }) {
   return (
@@ -201,6 +195,137 @@ function RangeRow({
 
 function normalizeProgressWidth(value: number) {
   return indexToPercent(value);
+}
+
+type PanelRiskCategory = 'low' | 'medium' | 'high';
+
+const panelRiskMeta: Record<PanelRiskCategory, { label: string; pillClass: string; barClass: string }> = {
+  low: {
+    label: '低风险',
+    pillClass: 'border-[#b7ccda] bg-[#edf6fb] text-[#1f5f8b]',
+    barClass: 'bg-[#1f5f8b]',
+  },
+  medium: {
+    label: '中风险',
+    pillClass: 'border-[#e3c979] bg-[#fbf4d6] text-[#8a6c37]',
+    barClass: 'bg-[#c99a2e]',
+  },
+  high: {
+    label: '高风险',
+    pillClass: 'border-[#d9b7a8] bg-[#f8ebe4] text-[#8d4a47]',
+    barClass: 'bg-[#b56b4a]',
+  },
+};
+
+function buildPanelRiskState(point: ApproachPoint, data: ApproachPoint[]) {
+  const sourceData = data.length ? data : [point];
+  const index = Math.max(0, sourceData.findIndex((item) => item.time === point.time));
+  const displayIndex = normalizeIndexForPanel(point.turbulenceIndex);
+  const confidence = buildPanelConfidenceInterval(point, sourceData, index, displayIndex);
+  const remainingTime = Math.max(0, Math.round(60 - point.time));
+  const averageIndex = buildPanelAverageIndex(index, remainingTime, displayIndex);
+  const upperSigmaIndex = buildPanelUpperSigmaIndex(averageIndex, index, remainingTime);
+
+  return {
+    category: getPanelRiskCategory(displayIndex, confidence.upper, upperSigmaIndex),
+    averageIndex,
+    upperSigmaIndex,
+    confidenceUpper: confidence.upper,
+  };
+}
+
+function getPanelRiskCategory(displayIndex: number, confidenceUpper: number, upperSigmaIndex: number): PanelRiskCategory {
+  if (displayIndex > upperSigmaIndex) {
+    return 'high';
+  }
+
+  if (confidenceUpper > upperSigmaIndex) {
+    return 'medium';
+  }
+
+  return 'low';
+}
+
+function buildPanelConfidenceInterval(point: ApproachPoint, data: ApproachPoint[], index: number, displayIndex: number) {
+  if (Number.isFinite(point.ciLower) && Number.isFinite(point.ciUpper)) {
+    return widenPanelConfidenceInterval({
+      lower: normalizeIndexForPanel(point.ciLower),
+      upper: normalizeIndexForPanel(point.ciUpper),
+      center: displayIndex,
+      minHalfWidth: 0.18,
+    });
+  }
+
+  const start = Math.max(0, index - 4);
+  const recent = data.slice(start, index + 1).map((item) => normalizeIndexForPanel(item.turbulenceIndex));
+  const deltas = recent.slice(1).map((value, deltaIndex) => Math.abs(value - recent[deltaIndex]));
+  const volatility = deltas.length ? deltas.reduce((sum, value) => sum + value, 0) / deltas.length : 0;
+  const width = clampPanelValue((0.09 + volatility * 1.05 + displayIndex * 0.055) * 2, 0.16, 0.42);
+
+  return {
+    lower: clampPanelValue(displayIndex - width, 0, 1),
+    upper: clampPanelValue(displayIndex + width, 0, 1),
+  };
+}
+
+function widenPanelConfidenceInterval({
+  lower,
+  upper,
+  center,
+  minHalfWidth,
+}: {
+  lower: number;
+  upper: number;
+  center: number;
+  minHalfWidth: number;
+}) {
+  const midpoint = (lower + upper) / 2 || center;
+  const halfWidth = Math.max((upper - lower) / 2, minHalfWidth);
+
+  return {
+    lower: clampPanelValue(midpoint - halfWidth, 0, 1),
+    upper: clampPanelValue(midpoint + halfWidth, 0, 1),
+  };
+}
+
+function buildPanelAverageIndex(index: number, remainingTime: number, currentIndex: number) {
+  const profile = {
+    baseline: 0.39,
+    peakAt: 22,
+    secondaryPeakAt: 15,
+    spread: 72,
+    peakLift: 0.16,
+    secondaryLift: 0.09,
+    wave: 0.022,
+    period: 6,
+    phase: 0.7,
+  };
+  const approachBump = Math.exp(-((remainingTime - profile.peakAt) ** 2) / profile.spread) * profile.peakLift;
+  const secondaryBump = Math.exp(-((remainingTime - profile.secondaryPeakAt) ** 2) / (profile.spread * 1.25)) * profile.secondaryLift;
+  const wave = Math.sin((index + profile.phase) / profile.period) * profile.wave;
+  const anchored = profile.baseline + approachBump + secondaryBump + wave;
+
+  return clampPanelValue(anchored * 0.78 + currentIndex * 0.22, 0, 1);
+}
+
+function buildPanelUpperSigmaIndex(averageIndex: number, index: number, remainingTime: number) {
+  const landingSensitivity = Math.exp(-((remainingTime - 18) ** 2) / 110) * 0.018;
+  const localWave = (Math.sin(index / 4.6) + 1) * 0.006;
+  const standardDeviation = (0.055 + landingSensitivity + localWave) * 2;
+
+  return clampPanelValue(averageIndex + standardDeviation * 2, 0, 1);
+}
+
+function normalizeIndexForPanel(value: number) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return clampPanelValue(value <= 1 ? value : value / 100, 0, 1);
+}
+
+function clampPanelValue(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
 }
 
 export default FlightStatusPanel;

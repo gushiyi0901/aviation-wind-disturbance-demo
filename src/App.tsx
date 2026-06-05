@@ -5,6 +5,7 @@ import ApproachAnimationPage from './pages/ApproachAnimationPage';
 import AirportRiskPage from './pages/AirportRiskPage';
 import EventAnalysisPage from './pages/EventAnalysisPage';
 import LoginPage from './pages/LoginPage';
+import TeamPage from './pages/TeamPage';
 import { clearMockAuthSession, getMockAuthSession } from './utils/auth';
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
   const isApproachPage = pathname === '/approach' || pathname.startsWith('/approach/');
   const isAirportPage = pathname === '/airports' || pathname.startsWith('/airports/');
   const isEventAnalysisPage = pathname === '/event-analysis' || pathname.startsWith('/event-analysis/');
+  const isTeamPage = pathname === '/team' || pathname.startsWith('/team/');
 
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
@@ -58,6 +60,8 @@ function App() {
         <AirportRiskPage onLogout={handleLogout} />
       ) : isEventAnalysisPage ? (
         <EventAnalysisPage onLogout={handleLogout} />
+      ) : isTeamPage ? (
+        <TeamPage onLogout={handleLogout} />
       ) : (
         <HomePage onLogout={handleLogout} />
       )}

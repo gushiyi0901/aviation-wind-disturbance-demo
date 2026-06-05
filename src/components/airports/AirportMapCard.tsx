@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MapPin } from 'lucide-react';
-import type { AirportLabelPlacement, AirportRiskProfile } from '../../data/mockAirportRiskData';
+import { airportRiskDisplayPeriod, type AirportLabelPlacement, type AirportRiskProfile } from '../../data/mockAirportRiskData';
 import {
   chinaMapViewBox,
   dashLinePaths,
@@ -40,31 +40,17 @@ function AirportMapCard({ airports, selectedAirportId, onSelect }: AirportMapCar
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="section-kicker bg-white/70">空间分布图</div>
-          <h2 className="mt-4 text-2xl font-bold text-foreground">国内机场动态地图</h2>
-        </div>
-
-        <div className="w-full max-w-[360px] shrink-0 rounded-[22px] border border-border/70 bg-white/75 px-4 py-3">
-          <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
-            <span>低风险</span>
-            <span>Risk 0-1</span>
-            <span>高风险</span>
-          </div>
-          <div className="mt-2 h-3 rounded-full bg-[linear-gradient(90deg,#1f78b4_0%,#21b6c7_25%,#f2c94c_50%,#f2994a_72%,#d84a4a_90%,#8e2a8a_100%)]" />
-          <div className="mt-2 flex justify-between text-[11px] font-semibold text-muted-foreground">
-            <span>0</span>
-            <span>0.5</span>
-            <span>1</span>
-          </div>
+          <h2 className="mt-4 text-2xl font-bold text-foreground">国内机场月平均风扰分布</h2>
         </div>
       </div>
 
-      <div className="relative mt-6 flex-1 overflow-hidden rounded-[30px] border border-border/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(246,244,238,0.98))] p-3 sm:p-5">
+      <div className="relative mt-6 flex-1 overflow-hidden rounded-[30px] border border-border/75 bg-[#fbfaf6] p-3 sm:p-5">
         <div className="relative mx-auto aspect-[25/19] min-h-[520px] w-full max-w-[1120px] lg:min-h-[660px]">
           <svg
             viewBox={`0 0 ${chinaMapViewBox.width} ${chinaMapViewBox.height}`}
-            className="absolute inset-0 h-full w-full"
+            className="absolute inset-0 h-full w-full -translate-x-[68px]"
             preserveAspectRatio="xMidYMid meet"
-            aria-label="中国机场风扰风险矢量地图"
+            aria-label="中国机场月平均风扰指数矢量地图"
           >
             <rect width={chinaMapViewBox.width} height={chinaMapViewBox.height} fill="#fbfaf6" />
 
@@ -129,7 +115,7 @@ function AirportMapCard({ airports, selectedAirportId, onSelect }: AirportMapCar
                   }}
                   role="button"
                   tabIndex={0}
-                  aria-label={`${airport.name}，当前指数 ${formatWindDisturbanceIndex(airport.currentIndex)}`}
+                  aria-label={`${airport.name}，${airportRiskDisplayPeriod}平均指数 ${formatWindDisturbanceIndex(airport.currentIndex)}`}
                 >
                   <circle r={glowRadius} fill={glowColor} />
                   {isSelected && <circle r={size / 2 + 5} fill="none" stroke="#2f493b" strokeWidth={3.5} />}
@@ -149,10 +135,24 @@ function AirportMapCard({ airports, selectedAirportId, onSelect }: AirportMapCar
                 {hoveredAirport.name}
               </div>
               <div className="mt-2 text-sm text-muted-foreground">
-                当前指数 {formatWindDisturbanceIndex(hoveredAirport.currentIndex)} · 风险映射 {normalizeRisk(hoveredAirport.currentIndex).toFixed(2)}
+                {airportRiskDisplayPeriod}平均指数 {formatWindDisturbanceIndex(hoveredAirport.currentIndex)} · 风险映射 {normalizeRisk(hoveredAirport.currentIndex).toFixed(2)}
               </div>
             </div>
           )}
+
+          <div className="pointer-events-none absolute right-4 top-1/2 z-[3] flex -translate-y-[calc(50%+107px)] items-center gap-3 rounded-[22px] border border-border/70 bg-white/82 px-3.5 py-4 shadow-soft backdrop-blur-xl">
+            <div className="flex h-56 flex-col items-center justify-between text-[11px] font-semibold text-muted-foreground">
+              <span>1</span>
+              <span>0.5</span>
+              <span>0</span>
+            </div>
+            <div className="h-56 w-3 rounded-full bg-[linear-gradient(180deg,#8e2a8a_0%,#d84a4a_10%,#f2994a_28%,#f2c94c_50%,#21b6c7_75%,#1f78b4_100%)]" />
+            <div className="flex h-56 flex-col justify-between text-xs font-semibold text-muted-foreground">
+              <span>高风险</span>
+              <span className="max-w-[4rem] leading-4">月平均指数</span>
+              <span>低风险</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>

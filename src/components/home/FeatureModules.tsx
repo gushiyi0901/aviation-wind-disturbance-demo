@@ -21,9 +21,18 @@ const airportPoints = [
   { name: '乌鲁木齐地窝堡', left: '24%', top: '32%', level: 'low' as const },
 ];
 
-function FeatureModules() {
+type FeatureModulesProps = {
+  compact?: boolean;
+};
+
+function FeatureModules({ compact = false }: FeatureModulesProps) {
   return (
-    <section id="modules" className="px-4 pb-14 pt-36 sm:px-6 sm:pt-44 lg:px-8 lg:pb-16 lg:pt-52">
+    <section
+      id="modules"
+      className={`px-4 pb-14 sm:px-6 lg:px-8 lg:pb-16 ${
+        compact ? 'pt-8 sm:pt-10 lg:pt-12' : 'pt-36 sm:pt-44 lg:pt-52'
+      }`}
+    >
       <div className="mx-auto max-w-[1680px]">
         <div className="value-band">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -37,7 +46,7 @@ function FeatureModules() {
             <FeatureRow
               id="approach-module"
               icon={<Activity size={22} />}
-              title="单次进近风扰指数"
+              title="单次航班进近降落风扰分析"
               description="按秒展示一次进近中的风扰指数变化，并结合风向、风速和风险等级，帮助说明局部扰动在过程中的出现位置。"
               future="秒级曲线 · 悬停提示 · 风向风速联动"
               actionHref="/approach"

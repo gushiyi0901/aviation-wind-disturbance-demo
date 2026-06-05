@@ -8,12 +8,9 @@ import type { ApproachPoint } from '../data/mockApproachData';
 import { exampleApproachMeta, exampleApproachRows } from '../data/exampleApproachDataset';
 import {
   buildApproachDataFromUpload,
-  buildApproachKeyMoments,
   type UploadedApproachAnalysis,
 } from '../utils/buildApproachDataFromUpload';
 import { parseFlightIndexFile } from '../utils/parseFlightIndexFile';
-import { riskLevelMeta } from '../utils/riskLevel';
-import { formatWindDisturbanceIndex } from '../utils/indexScale';
 
 type AnalysisMeta = {
   flight: string;
@@ -37,8 +34,8 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isAnalysisStarted, setIsAnalysisStarted] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
-  const [averageDimension, setAverageDimension] = useState<AverageDimension>('month');
   const [timeRange, setTimeRange] = useState<TimeRange>([0, LANDING_REFERENCE_TIME]);
+  const averageDimension: AverageDimension = 'month';
 
   const analysisData = analysis?.data ?? [];
   const availableTimeRange = useMemo<TimeRange>(() => [0, LANDING_REFERENCE_TIME], []);
@@ -51,8 +48,6 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
     const [startTime, endTime] = timeRange;
     return analysisData.filter((point) => point.time >= startTime && point.time <= endTime);
   }, [analysisData, timeRange]);
-
-  const visibleKeyMoments = useMemo(() => buildApproachKeyMoments(visibleData), [visibleData]);
 
   const fallbackPoint = useMemo(() => {
     if (visibleData.length) {
@@ -96,7 +91,6 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
       });
       setUploadedFileName(parsed.fileName);
       setUploadedRowCount(parsed.rows.length);
-      setAverageDimension('month');
     } catch (error) {
       setAnalysis(null);
       setAnalysisMeta(null);
@@ -129,7 +123,6 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
     setUploadedFileName(exampleApproachMeta.label);
     setUploadedRowCount(exampleApproachRows.length);
     setUploadError(null);
-    setAverageDimension('month');
     setCurrentPoint(exampleAnalysis.data[0]);
     setReplayToken((value) => value + 1);
     setIsAnalysisStarted(true);
@@ -143,7 +136,6 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
     setUploadError(null);
     setCurrentPoint(null);
     setIsAnalysisStarted(false);
-    setAverageDimension('month');
     setTimeRange([0, LANDING_REFERENCE_TIME]);
   };
 
@@ -154,7 +146,7 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
           <span className="h-2.5 w-2.5 rounded-full bg-accent" />
         </div>
 
-        <div className="text-sm font-semibold text-foreground sm:text-base">单次进近风扰指数</div>
+        <div className="text-sm font-semibold text-foreground sm:text-base">单次航班进近降落风扰分析</div>
 
         <div className="flex flex-wrap items-center justify-center gap-2 md:justify-end">
           <a href="/" className="action-secondary">
@@ -170,10 +162,10 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
 
       <main className="mx-auto mt-8 max-w-[1680px]">
         <section className="surface-card px-6 py-7 sm:px-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <h1 className="text-3xl font-bold leading-tight text-foreground sm:text-4xl lg:text-[3.1rem]">单次进近风扰指数</h1>
+          <div className="flex flex-col gap-4">
+            <h1 className="text-3xl font-bold leading-tight text-foreground sm:text-4xl lg:text-[3.1rem]">单次航班进近降落风扰分析</h1>
 
-            {isAnalysisStarted && analysisMeta && (
+            {isAnalysisStarted && analysisMeta && analysisMeta.sourceLabel !== exampleApproachMeta.label && (
               <div className="flex flex-wrap items-center gap-3">
                 <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-white/82 px-4 py-2 text-sm text-muted-foreground">
                   <span>{analysisMeta.sourceLabel}</span>
@@ -193,6 +185,7 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
             onFileSelect={handleFileSelect}
             onStartAnalysis={handleStartAnalysis}
             onUseExample={handleUseExample}
+            onResetUpload={handleResetUpload}
             selectedFileName={uploadedFileName}
             rowCount={uploadedRowCount}
             error={uploadError}
@@ -207,10 +200,9 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
               <FlightStatusPanel
                 point={currentPoint ?? fallbackPoint}
                 fallbackPoint={fallbackPoint}
+                data={visibleData}
                 flight={analysisMeta.flight}
                 stage={analysisMeta.stage}
-                averageDimension={averageDimension}
-                onAverageDimensionChange={setAverageDimension}
                 availableTimeRange={availableTimeRange}
                 selectedTimeRange={timeRange}
                 onTimeRangeChange={setTimeRange}
@@ -218,28 +210,6 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
             )}
 
             <div className="space-y-6">
-              <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {visibleKeyMoments.map((item) => {
-                  const tone = riskLevelMeta[item.point.riskLevel];
-
-                  return (
-                    <article key={item.point.time} className="surface-card bg-white/82">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${tone.pillClass}`}>
-                            高风险-距离接地{LANDING_REFERENCE_TIME - item.point.time}秒
-                          </span>
-                          <div className="mt-1 text-sm text-muted-foreground">{item.summary}</div>
-                        </div>
-                      </div>
-                      <div className="mt-4 text-sm text-muted-foreground">
-                        指数 {formatWindDisturbanceIndex(item.point.turbulenceIndex)} / 高度 {item.point.altitude} ft
-                      </div>
-                    </article>
-                  );
-                })}
-              </section>
-
               <ApproachChart
                 data={visibleData}
                 replayToken={replayToken}

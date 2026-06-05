@@ -14,6 +14,7 @@ export type MockAuthSession = {
 
 const AUTH_STORAGE_KEY = 'approach-risk-demo-auth';
 const DEMO_ACCOUNTS_STORAGE_KEY = 'demoAccounts';
+const DEFAULT_DEMO_ACCOUNTS: DemoAccount[] = [{ username: 'admin', password: 'admin123456' }];
 
 export function getMockAuthSession(): MockAuthSession | null {
   if (typeof window === 'undefined') {
@@ -70,30 +71,32 @@ export function clearMockAuthSession() {
 }
 
 export function getDemoAccounts(): DemoAccount[] {
+  const storedAccounts: DemoAccount[] = [];
+
   if (typeof window === 'undefined') {
-    return [];
+    return DEFAULT_DEMO_ACCOUNTS;
   }
 
   const rawAccounts = window.localStorage.getItem(DEMO_ACCOUNTS_STORAGE_KEY);
 
-  if (!rawAccounts) {
-    return [];
-  }
+  if (rawAccounts) {
+    try {
+      const accounts = JSON.parse(rawAccounts);
 
-  try {
-    const accounts = JSON.parse(rawAccounts);
-
-    if (Array.isArray(accounts)) {
-      return accounts.filter(
-        (account): account is DemoAccount =>
-          typeof account?.username === 'string' && typeof account?.password === 'string' && account.username.trim() !== '',
-      );
+      if (Array.isArray(accounts)) {
+        storedAccounts.push(
+          ...accounts.filter(
+            (account): account is DemoAccount =>
+              typeof account?.username === 'string' && typeof account?.password === 'string' && account.username.trim() !== '',
+          ),
+        );
+      }
+    } catch {
+      window.localStorage.removeItem(DEMO_ACCOUNTS_STORAGE_KEY);
     }
-  } catch {
-    window.localStorage.removeItem(DEMO_ACCOUNTS_STORAGE_KEY);
   }
 
-  return [];
+  return [...storedAccounts, ...DEFAULT_DEMO_ACCOUNTS.filter((account) => !storedAccounts.some((item) => item.username === account.username))];
 }
 
 export function saveDemoAccount(account: DemoAccount) {

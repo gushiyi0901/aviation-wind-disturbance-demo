@@ -1,50 +1,21 @@
-import { type FormEvent, type ReactNode, useMemo, useState } from 'react';
+import { type FormEvent, type ReactNode, useState } from 'react';
 import { LockKeyhole, ShieldCheck, UserRound } from 'lucide-react';
-import { findDemoAccount, getDemoAccounts, saveDemoAccount, saveMockAuthSession } from '../utils/auth';
+import { findDemoAccount, saveMockAuthSession } from '../utils/auth';
 
 type LoginPageProps = {
   onLoginSuccess: () => void;
 };
 
-type PageMode = 'login' | 'register' | 'resetPassword';
-
 function LoginPage({ onLoginSuccess }: LoginPageProps) {
-  const [pageMode, setPageMode] = useState<PageMode>('login');
-  const [hasRegisteredAccount, setHasRegisteredAccount] = useState(() => getDemoAccounts().length > 0);
   const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
-  const [registerName, setRegisterName] = useState('');
-  const [registerPassword, setRegisterPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [resetName, setResetName] = useState('');
-  const [resetPassword, setResetPassword] = useState('');
-  const [confirmResetPassword, setConfirmResetPassword] = useState('');
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-
-  const activeTitle = useMemo(() => {
-    if (pageMode === 'register') {
-      return '账号注册';
-    }
-
-    if (pageMode === 'resetPassword') {
-      return '设置新密码';
-    }
-
-    return '平台登录';
-  }, [pageMode]);
 
   const handleLogin = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setNotice('');
-
-    if (!hasRegisteredAccount) {
-      setError('当前没有本地账号，请先注册');
-      return;
-    }
 
     if (!account.trim()) {
-      setError('请输入账号或用户名');
+      setError('请输入账号');
       return;
     }
 
@@ -63,96 +34,6 @@ function LoginPage({ onLoginSuccess }: LoginPageProps) {
     setError('');
     saveMockAuthSession(registeredAccount.username, 'account');
     onLoginSuccess();
-  };
-
-  const handleRegister = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setNotice('');
-
-    const username = registerName.trim();
-
-    if (!username) {
-      setError('请输入账号或用户名');
-      return;
-    }
-
-    if (!registerPassword.trim()) {
-      setError('请输入密码');
-      return;
-    }
-
-    if (registerPassword !== confirmPassword) {
-      setError('两次输入的密码不一致');
-      return;
-    }
-
-    saveDemoAccount({ username, password: registerPassword });
-    setHasRegisteredAccount(true);
-    setAccount(username);
-    setPassword('');
-    setRegisterName('');
-    setRegisterPassword('');
-    setConfirmPassword('');
-    setPageMode('login');
-    setError('');
-    setNotice('注册成功，请使用刚注册的账号密码登录');
-  };
-
-  const handleResetPassword = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setNotice('');
-
-    const username = resetName.trim();
-
-    if (!username) {
-      setError('请输入账号或用户名');
-      return;
-    }
-
-    const registeredAccount = findDemoAccount(username);
-
-    if (!registeredAccount) {
-      setError('未找到该账号，请先注册');
-      return;
-    }
-
-    if (!resetPassword.trim()) {
-      setError('请输入新密码');
-      return;
-    }
-
-    if (resetPassword !== confirmResetPassword) {
-      setError('两次输入的新密码不一致');
-      return;
-    }
-
-    saveDemoAccount({ username: registeredAccount.username, password: resetPassword });
-    setAccount(registeredAccount.username);
-    setPassword('');
-    setResetName('');
-    setResetPassword('');
-    setConfirmResetPassword('');
-    setPageMode('login');
-    setError('');
-    setNotice('密码已更新，请使用新密码登录');
-  };
-
-  const switchToLogin = () => {
-    setPageMode('login');
-    setError('');
-    setNotice('');
-  };
-
-  const switchToRegister = () => {
-    setPageMode('register');
-    setError('');
-    setNotice('');
-  };
-
-  const switchToResetPassword = () => {
-    setPageMode('resetPassword');
-    setError('');
-    setNotice('');
   };
 
   return (
@@ -181,166 +62,43 @@ function LoginPage({ onLoginSuccess }: LoginPageProps) {
           <div className="flex items-center justify-between gap-4">
             <div>
               <div className="text-sm font-semibold text-accent">安全访问</div>
-              <h2 className="mt-1 text-2xl font-bold text-foreground">{activeTitle}</h2>
+              <h2 className="mt-1 text-2xl font-bold text-foreground">平台登录</h2>
             </div>
             <div className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-accent/20 bg-accent/10 text-accent">
               <ShieldCheck size={23} />
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-2 rounded-[20px] border border-border/70 bg-background/70 p-1.5">
-            <button
-              type="button"
-              onClick={switchToLogin}
-              className={`h-11 rounded-2xl text-sm font-semibold transition ${
-                pageMode === 'login' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              账号登录
+          <p className="mt-5 rounded-[20px] border border-border/70 bg-background/68 px-4 py-3 text-sm leading-6 text-muted-foreground">
+            账号密码由管理员统一提供，如对登录有疑问，请联系管理员获取。
+          </p>
+
+          <form className="mt-6 space-y-4" onSubmit={handleLogin}>
+            <FieldShell icon={<UserRound size={18} />} label="账号">
+              <input
+                value={account}
+                onChange={(event) => setAccount(event.target.value)}
+                className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
+                placeholder="请输入管理员提供的账号"
+              />
+            </FieldShell>
+
+            <FieldShell icon={<LockKeyhole size={18} />} label="密码">
+              <input
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                type="password"
+                className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
+                placeholder="请输入密码"
+              />
+            </FieldShell>
+
+            <Feedback error={error} />
+
+            <button type="submit" className="action-primary w-full">
+              登录
             </button>
-            <button
-              type="button"
-              onClick={switchToRegister}
-              className={`h-11 rounded-2xl text-sm font-semibold transition ${
-                pageMode === 'register' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              注册账号
-            </button>
-          </div>
-
-          {pageMode === 'login' ? (
-            <form className="mt-6 space-y-4" onSubmit={handleLogin}>
-              <FieldShell icon={<UserRound size={18} />} label="账号 / 用户名">
-                <input
-                  value={account}
-                  onChange={(event) => setAccount(event.target.value)}
-                  className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
-                  placeholder="请输入已注册账号"
-                />
-              </FieldShell>
-
-              <FieldShell icon={<LockKeyhole size={18} />} label="密码">
-                <input
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  type="password"
-                  className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
-                  placeholder="请输入密码"
-                />
-              </FieldShell>
-
-              <Feedback error={error} notice={notice} />
-
-              <button type="submit" className="action-primary w-full">
-                登录
-              </button>
-
-              {!hasRegisteredAccount && <p className="text-center text-xs leading-6 text-muted-foreground">当前没有本地账号，请先注册</p>}
-
-              <div className="text-center text-sm text-muted-foreground">
-                没有账号？
-                <button type="button" onClick={switchToRegister} className="ml-2 font-semibold text-accent hover:text-foreground">
-                  注册
-                </button>
-                <button type="button" onClick={switchToResetPassword} className="ml-4 font-semibold text-accent hover:text-foreground">
-                  忘记密码？
-                </button>
-              </div>
-            </form>
-          ) : pageMode === 'register' ? (
-            <form className="mt-6 space-y-4" onSubmit={handleRegister}>
-              <FieldShell icon={<UserRound size={18} />} label="账号 / 用户名">
-                <input
-                  value={registerName}
-                  onChange={(event) => setRegisterName(event.target.value)}
-                  className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
-                  placeholder="请输入账号或用户名"
-                />
-              </FieldShell>
-
-              <FieldShell icon={<LockKeyhole size={18} />} label="密码">
-                <input
-                  value={registerPassword}
-                  onChange={(event) => setRegisterPassword(event.target.value)}
-                  type="password"
-                  className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
-                  placeholder="请输入密码"
-                />
-              </FieldShell>
-
-              <FieldShell icon={<LockKeyhole size={18} />} label="确认密码">
-                <input
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  type="password"
-                  className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
-                  placeholder="请再次输入密码"
-                />
-              </FieldShell>
-
-              <Feedback error={error} notice={notice} />
-
-              <button type="submit" className="action-primary w-full">
-                注册
-              </button>
-
-              <div className="text-center text-sm text-muted-foreground">
-                已有账号？
-                <button
-                  type="button"
-                  onClick={switchToLogin}
-                  className="ml-2 font-semibold text-accent hover:text-foreground"
-                >
-                  返回登录
-                </button>
-              </div>
-            </form>
-          ) : (
-            <form className="mt-6 space-y-4" onSubmit={handleResetPassword}>
-              <FieldShell icon={<UserRound size={18} />} label="账号 / 用户名">
-                <input
-                  value={resetName}
-                  onChange={(event) => setResetName(event.target.value)}
-                  className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
-                  placeholder="请输入需要重设密码的账号"
-                />
-              </FieldShell>
-
-              <FieldShell icon={<LockKeyhole size={18} />} label="新密码">
-                <input
-                  value={resetPassword}
-                  onChange={(event) => setResetPassword(event.target.value)}
-                  type="password"
-                  className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
-                  placeholder="请输入新密码"
-                />
-              </FieldShell>
-
-              <FieldShell icon={<LockKeyhole size={18} />} label="确认新密码">
-                <input
-                  value={confirmResetPassword}
-                  onChange={(event) => setConfirmResetPassword(event.target.value)}
-                  type="password"
-                  className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
-                  placeholder="请再次输入新密码"
-                />
-              </FieldShell>
-
-              <Feedback error={error} notice={notice} />
-
-              <button type="submit" className="action-primary w-full">
-                保存新密码
-              </button>
-
-              <div className="text-center text-sm text-muted-foreground">
-                想起密码？
-                <button type="button" onClick={switchToLogin} className="ml-2 font-semibold text-accent hover:text-foreground">
-                  返回登录
-                </button>
-              </div>
-            </form>
-          )}
+          </form>
         </div>
       </section>
     </main>
@@ -359,13 +117,9 @@ function FieldShell({ icon, label, children }: { icon: ReactNode; label: string;
   );
 }
 
-function Feedback({ error, notice }: { error: string; notice: string }) {
+function Feedback({ error }: { error: string }) {
   if (error) {
     return <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>;
-  }
-
-  if (notice) {
-    return <div className="rounded-2xl border border-accent/20 bg-accent/10 px-4 py-3 text-sm text-accent">{notice}</div>;
   }
 
   return null;

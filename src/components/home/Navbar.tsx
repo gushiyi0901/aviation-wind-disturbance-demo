@@ -2,7 +2,7 @@ import { ChevronDown, LogOut } from 'lucide-react';
 
 const navItems = [
   { label: '项目概览', href: '#overview' },
-  { label: '价值说明', href: '#value-section' },
+  { label: '价值说明', href: '/team' },
 ];
 
 const featureItems = [

@@ -67,14 +67,14 @@ function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatte
     <section className="surface-card p-5 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="section-kicker bg-white/70">核心主图</div>
+          <div className="section-kicker bg-white/70">辅助象限</div>
           <h2 className="mt-4 text-2xl font-bold text-foreground">指数 - 事件散点象限图</h2>
         </div>
         <div className="text-sm text-muted-foreground">平均风扰指数 / 降落事件数</div>
       </div>
 
       <div className="relative mt-6 rounded-[30px] border border-border/75 bg-white/85 p-4 sm:p-5">
-        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="h-[420px] w-full xl:h-[520px]">
+        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="h-[360px] w-full xl:h-[430px]">
           {yTicks.map((tick) => {
             const y = HEIGHT - MARGIN.bottom - ((tick - yMin) / Math.max(yMax - yMin, 1)) * innerHeight;
             return (
@@ -127,7 +127,7 @@ function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatte
           </text>
 
           <text x={WIDTH - MARGIN.right - 8} y={MARGIN.top + 16} textAnchor="end" fontSize="11" fill="#8d4a47">
-            高指数 / 高事件：重点关注
+            高指数 / 高事件：同步偏高
           </text>
           <text x={MARGIN.left + 12} y={MARGIN.top + 16} fontSize="11" fill="#9a7b39">
             低指数 / 高事件：非风扰主导

@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { AlertTriangle, Gauge, Navigation, RotateCcw, Wind, X } from 'lucide-react';
 import type { AverageDimension, TimeRange } from './approachAnalysisTypes';
 import type { ApproachPoint } from '../../data/mockApproachData';
-import { riskLevelMeta } from '../../utils/riskLevel';
 
 type ApproachChartProps = {
   data: ApproachPoint[];
@@ -21,17 +20,27 @@ type ChartPoint = ApproachPoint & {
   displayIndex: number;
   averageIndex: number;
   averageY: number;
+  upperSigmaIndex: number;
+  upperSigmaY: number;
   confidenceLower: number;
   confidenceUpper: number;
   confidenceLowerY: number;
   confidenceUpperY: number;
+  riskCategory: ChartRiskCategory;
 };
 
+type ChartRiskCategory = 'low' | 'medium' | 'high';
+
 type RiskSummary = {
-  highRiskNodes: ChartPoint[];
   highestPoint: ChartPoint;
-  highRiskDuration: number;
+  highestHighRiskPoint: ChartPoint | null;
   averageDelta: number;
+};
+
+type RiskSegment = {
+  id: string;
+  pathD: string;
+  riskCategory: ChartRiskCategory;
 };
 
 const CHART_WIDTH = 1120;
@@ -39,10 +48,9 @@ const CHART_HEIGHT = 505;
 const MARGIN = { top: 30, right: 34, left: 104 };
 const PLOT_BOTTOM = 258;
 const WIND_BAND_TOP = 304;
-const WIND_BAND_HEIGHT = 72;
+const WIND_BAND_HEIGHT = 80;
 const X_AXIS_LABEL_Y = 432;
 const ANIMATION_DURATION = 3000;
-const HIGH_RISK_THRESHOLD = 0.6;
 
 function ApproachChart({
   data,
@@ -56,21 +64,11 @@ function ApproachChart({
   const [progress, setProgress] = useState(0);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [selectedPoint, setSelectedPoint] = useState<ChartPoint | null>(null);
-  const [pathLength, setPathLength] = useState(0);
-  const pathRef = useRef<SVGPathElement | null>(null);
 
-  const { points, pathD, averagePathD, confidenceBandD, xTicks, yTicks, riskSummary, windPoints } = useMemo(
+  const { points, averagePathD, upperSigmaPathD, confidenceBandD, riskSegments, xTicks, yTicks, riskSummary, windPoints } = useMemo(
     () => buildChartModel(data, averageDimension, landingReferenceTime, selectedTimeRange),
     [averageDimension, data, landingReferenceTime, selectedTimeRange],
   );
-
-  useEffect(() => {
-    if (!pathRef.current) {
-      return;
-    }
-
-    setPathLength(pathRef.current.getTotalLength());
-  }, [pathD]);
 
   useEffect(() => {
     if (!data.length) {
@@ -126,13 +124,9 @@ function ApproachChart({
   const activeIndex = Math.min(points.length - 1, Math.max(0, Math.round(progress * (points.length - 1))));
   const scanPoint = points[activeIndex];
   const hoverPoint = hoveredIndex !== null ? points[hoveredIndex] : null;
-  const hoverTone = hoverPoint ? riskLevelMeta[hoverPoint.riskLevel] : null;
   const dimensionLabel = averageDimensionLabels[averageDimension];
   const highlightedTime = selectedPoint?.time ?? scanPoint?.time;
-  const highRiskIndexes = points
-    .map((point, index) => ({ point, index }))
-    .filter(({ point }) => point.displayIndex >= HIGH_RISK_THRESHOLD)
-    .map(({ index }) => index);
+  const curveClipWidth = progress >= 1 ? CHART_WIDTH - MARGIN.left - MARGIN.right : Math.max(0, scanPoint.x - MARGIN.left);
 
   const tooltipStyle: CSSProperties | undefined = hoverPoint
     ? {
@@ -167,25 +161,30 @@ function ApproachChart({
         </button>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryTile label="高风险节点" value={formatHighRiskNodes(riskSummary.highRiskNodes)} />
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <SummaryTile label="最高风扰指数" value={formatIndex(riskSummary.highestPoint.displayIndex)} />
-        <SummaryTile label="高风险持续" value={`${riskSummary.highRiskDuration} 秒`} />
         <SummaryTile label={`高于${dimensionLabel}均`} value={formatDelta(riskSummary.averageDelta)} />
+        <SummaryTile label="曲线风险规则" value="相对月均值上2σ" />
       </div>
 
       <div className="mt-5 rounded-[18px] border border-border/75 bg-white/90 p-4 sm:p-5">
         <div className="pb-4">
-          <h3 className="text-center text-lg font-semibold leading-7 text-foreground sm:text-xl">单次进近风扰指数动态演示</h3>
+          <h3 className="text-center text-lg font-semibold leading-7 text-foreground sm:text-xl">单次航班进近降落风扰分析</h3>
           <div className="mx-auto mt-4 flex max-w-4xl flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
             <LegendItem label="样本进近曲线" color="#1f5f8b" />
             <LegendItem label="历史月均值基准" color="#8a6c37" dashed />
+            <LegendItem label="月均值上2σ" color="#9a4f43" dashed />
             <LegendItem label="置信区间带" color="#d7c5b7" thick />
-            <LegendItem label="高风险节点" color="#b56b4a" marker />
           </div>
         </div>
         <div className="relative">
-          <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} className="h-[430px] w-full xl:h-[455px]">
+          <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} className="h-[355px] w-full xl:h-[380px]">
+            <defs>
+              <clipPath id="approach-risk-curve-clip">
+                <rect x={MARGIN.left} y={MARGIN.top - 12} width={curveClipWidth} height={PLOT_BOTTOM - MARGIN.top + 24} />
+              </clipPath>
+            </defs>
+
             {yTicks.map((tick) => {
               const y = toChartY(tick);
               return (
@@ -238,20 +237,20 @@ function ApproachChart({
 
             <path d={confidenceBandD} fill="#d7c5b7" fillOpacity="0.26" stroke="none" />
             <path d={averagePathD} fill="none" stroke="#8a6c37" strokeWidth="3" strokeDasharray="9 7" strokeLinecap="round" strokeLinejoin="round" />
-            <path
-              ref={pathRef}
-              d={pathD}
-              fill="none"
-              stroke="#1f5f8b"
-              strokeWidth="4.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{
-                strokeDasharray: pathLength || undefined,
-                strokeDashoffset: pathLength ? (1 - progress) * pathLength : undefined,
-                transition: pathLength ? 'stroke-dashoffset 0.1s linear' : undefined,
-              }}
-            />
+            <path d={upperSigmaPathD} fill="none" stroke="#9a4f43" strokeWidth="2" strokeDasharray="6 8" strokeLinecap="round" strokeLinejoin="round" />
+            <g clipPath="url(#approach-risk-curve-clip)">
+              {riskSegments.map((segment) => (
+                <path
+                  key={segment.id}
+                  d={segment.pathD}
+                  fill="none"
+                  stroke={chartRiskMeta[segment.riskCategory].stroke}
+                  strokeWidth="4.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ))}
+            </g>
 
             {progress > 0 && scanPoint && (
               <>
@@ -259,12 +258,6 @@ function ApproachChart({
                 <circle cx={scanPoint.x} cy={scanPoint.y} r="6.5" fill="#ffffff" stroke="#9a4f43" strokeWidth="3" />
               </>
             )}
-
-            {highRiskIndexes.map((index) => {
-              const point = points[index];
-              const isVisible = index <= activeIndex || progress >= 1;
-              return isVisible ? <circle key={`risk-${point.time}`} cx={point.x} cy={point.y} r="5.2" fill="#b56b4a" /> : null;
-            })}
 
             {points.map((point, index) => {
               const isVisible = index <= activeIndex || progress >= 1;
@@ -334,20 +327,23 @@ function ApproachChart({
             </g>
           </svg>
 
-          {hoverPoint && hoverTone && tooltipStyle && (
+          {hoverPoint && tooltipStyle && (
             <div className="pointer-events-none absolute z-20 w-60 max-w-[calc(100vw-2.5rem)] rounded-[18px] border border-border/70 bg-white/95 p-4 shadow-soft" style={tooltipStyle}>
               <div className="text-sm font-semibold text-foreground">距接地 {hoverPoint.remainingTime} 秒</div>
               <div className="mt-3 space-y-2 text-sm text-muted-foreground">
                 <InfoRow label="高度" value={`${hoverPoint.altitude} ft`} />
                 <InfoRow label="样本进近曲线" value={formatIndex(hoverPoint.displayIndex)} icon={<Gauge size={14} className="text-accent" />} />
                 <InfoRow label={`历史${dimensionLabel}均值基准`} value={formatIndex(hoverPoint.averageIndex)} />
+                <InfoRow label="月均值上2σ" value={formatIndex(hoverPoint.upperSigmaIndex)} />
                 <InfoRow label="置信区间" value={`${formatIndex(hoverPoint.confidenceLower)} - ${formatIndex(hoverPoint.confidenceUpper)}`} />
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-2">
                     <AlertTriangle size={14} className="text-accent-secondary" />
                     风险等级
                   </span>
-                  <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${hoverTone.pillClass}`}>{hoverPoint.riskLevel}</span>
+                  <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${chartRiskMeta[hoverPoint.riskCategory].pillClass}`}>
+                    {chartRiskMeta[hoverPoint.riskCategory].label}
+                  </span>
                 </div>
                 <InfoRow label="风向" value={`${hoverPoint.windDirection}°`} icon={<Navigation size={14} className="text-accent" />} />
                 <InfoRow label="风速" value={`${hoverPoint.windSpeed} kt`} icon={<Wind size={14} className="text-accent" />} />
@@ -358,6 +354,7 @@ function ApproachChart({
         </div>
 
         {selectedPoint && <ConfidenceDetailTable point={selectedPoint} onClose={() => setSelectedPoint(null)} />}
+        <HighRiskNotice point={riskSummary.highestHighRiskPoint} />
       </div>
     </section>
   );
@@ -369,7 +366,9 @@ function buildChartModel(data: ApproachPoint[], dimension: AverageDimension, lan
       points: [] as ChartPoint[],
       pathD: '',
       averagePathD: '',
+      upperSigmaPathD: '',
       confidenceBandD: '',
+      riskSegments: [] as RiskSegment[],
       xTicks: [] as number[],
       yTicks: [0, 0.25, 0.5, 0.75, 1],
       riskSummary: null as RiskSummary | null,
@@ -387,6 +386,8 @@ function buildChartModel(data: ApproachPoint[], dimension: AverageDimension, lan
       remainingTime,
       currentIndex: displayIndex,
     });
+    const upperSigmaIndex = buildUpperSigmaIndex(averageIndex, index, remainingTime);
+    const riskCategory = getChartRiskCategory(displayIndex, confidence.upper, upperSigmaIndex);
 
     return {
       ...point,
@@ -396,10 +397,13 @@ function buildChartModel(data: ApproachPoint[], dimension: AverageDimension, lan
       displayIndex,
       averageIndex,
       averageY: toChartY(averageIndex),
+      upperSigmaIndex,
+      upperSigmaY: toChartY(upperSigmaIndex),
       confidenceLower: confidence.lower,
       confidenceUpper: confidence.upper,
       confidenceLowerY: toChartY(confidence.lower),
       confidenceUpperY: toChartY(confidence.upper),
+      riskCategory,
     };
   });
 
@@ -407,7 +411,9 @@ function buildChartModel(data: ApproachPoint[], dimension: AverageDimension, lan
     points,
     pathD: buildPath(points, 'y'),
     averagePathD: buildPath(points, 'averageY'),
+    upperSigmaPathD: buildPath(points, 'upperSigmaY'),
     confidenceBandD: buildConfidenceBandPath(points),
+    riskSegments: buildRiskSegments(points),
     xTicks: buildTimeTicks(selectedTimeRange),
     yTicks: [0, 0.25, 0.5, 0.75, 1],
     riskSummary: buildRiskSummary(points),
@@ -415,7 +421,7 @@ function buildChartModel(data: ApproachPoint[], dimension: AverageDimension, lan
   };
 }
 
-function buildPath(points: ChartPoint[], yKey: 'y' | 'averageY') {
+function buildPath(points: ChartPoint[], yKey: 'y' | 'averageY' | 'upperSigmaY') {
   return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point[yKey].toFixed(2)}`).join(' ');
 }
 
@@ -427,6 +433,62 @@ function buildConfidenceBandPath(points: ChartPoint[]) {
   const upperPath = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.confidenceUpperY.toFixed(2)}`).join(' ');
   const lowerPath = [...points].reverse().map((point) => `L ${point.x.toFixed(2)} ${point.confidenceLowerY.toFixed(2)}`).join(' ');
   return `${upperPath} ${lowerPath} Z`;
+}
+
+function buildRiskSegments(points: ChartPoint[]): RiskSegment[] {
+  return points.slice(1).flatMap((point, index) => {
+    const previous = points[index];
+    const highCrossing = findCrossingT(previous.displayIndex - previous.upperSigmaIndex, point.displayIndex - point.upperSigmaIndex);
+    const mediumCrossing = findCrossingT(previous.confidenceUpper - previous.upperSigmaIndex, point.confidenceUpper - point.upperSigmaIndex);
+    const stops = [0, highCrossing, mediumCrossing, 1]
+      .filter((value): value is number => Number.isFinite(value))
+      .sort((left, right) => left - right)
+      .filter((value, stopIndex, array) => stopIndex === 0 || Math.abs(value - array[stopIndex - 1]) > 0.001);
+
+    return stops.slice(1).map((endT, stopIndex) => {
+      const startT = stops[stopIndex];
+      const midpointT = (startT + endT) / 2;
+      const start = interpolateSegmentPoint(previous, point, startT);
+      const end = interpolateSegmentPoint(previous, point, endT);
+      const midpoint = interpolateSegmentPoint(previous, point, midpointT);
+
+      return {
+        id: `${previous.time}-${point.time}-${startT.toFixed(3)}-${endT.toFixed(3)}`,
+        pathD: `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} L ${end.x.toFixed(2)} ${end.y.toFixed(2)}`,
+        riskCategory: getChartRiskCategory(midpoint.displayIndex, midpoint.confidenceUpper, midpoint.upperSigmaIndex),
+      };
+    });
+  });
+}
+
+function findCrossingT(startValue: number, endValue: number) {
+  if (startValue === 0) {
+    return 0;
+  }
+
+  if (endValue === 0) {
+    return 1;
+  }
+
+  if (startValue * endValue > 0) {
+    return Number.NaN;
+  }
+
+  return clamp(Math.abs(startValue) / (Math.abs(startValue) + Math.abs(endValue)), 0, 1);
+}
+
+function interpolateSegmentPoint(start: ChartPoint, end: ChartPoint, t: number) {
+  return {
+    x: interpolateNumber(start.x, end.x, t),
+    y: interpolateNumber(start.y, end.y, t),
+    displayIndex: interpolateNumber(start.displayIndex, end.displayIndex, t),
+    confidenceUpper: interpolateNumber(start.confidenceUpper, end.confidenceUpper, t),
+    upperSigmaIndex: interpolateNumber(start.upperSigmaIndex, end.upperSigmaIndex, t),
+  };
+}
+
+function interpolateNumber(start: number, end: number, t: number) {
+  return start + (end - start) * t;
 }
 
 function normalizeIndexForDisplay(value: number) {
@@ -443,7 +505,7 @@ function buildConfidenceInterval(point: ApproachPoint, data: ApproachPoint[], in
       lower: normalizeIndexForDisplay(point.ciLower),
       upper: normalizeIndexForDisplay(point.ciUpper),
       center: displayIndex,
-      minHalfWidth: 0.09,
+      minHalfWidth: 0.18,
     });
   }
 
@@ -452,7 +514,7 @@ function buildConfidenceInterval(point: ApproachPoint, data: ApproachPoint[], in
   const recent = data.slice(start, index + 1).map((item) => normalizeIndexForDisplay(item.turbulenceIndex));
   const deltas = recent.slice(1).map((value, deltaIndex) => Math.abs(value - recent[deltaIndex]));
   const volatility = deltas.length ? deltas.reduce((sum, value) => sum + value, 0) / deltas.length : 0;
-  const width = clamp(0.09 + volatility * 1.05 + displayIndex * 0.055, 0.08, 0.24);
+  const width = clamp((0.09 + volatility * 1.05 + displayIndex * 0.055) * 2, 0.16, 0.42);
 
   return {
     lower: clamp(displayIndex - width, 0, 1),
@@ -500,33 +562,38 @@ function buildAverageIndex({
   return clamp(anchored * 0.78 + currentIndex * 0.22, 0, 1);
 }
 
-function buildRiskSummary(points: ChartPoint[]): RiskSummary {
-  const highRiskNodes = findHighRiskNodes(points);
-  const highestPoint = points.reduce((max, point) => (point.displayIndex > max.displayIndex ? point : max), points[0]);
-  const highRiskDuration = points.filter((point) => point.displayIndex >= HIGH_RISK_THRESHOLD).length;
+function buildUpperSigmaIndex(averageIndex: number, index: number, remainingTime: number) {
+  const landingSensitivity = Math.exp(-((remainingTime - 18) ** 2) / 110) * 0.018;
+  const localWave = (Math.sin(index / 4.6) + 1) * 0.006;
+  const standardDeviation = (0.055 + landingSensitivity + localWave) * 2;
 
-  return {
-    highRiskNodes,
-    highestPoint,
-    highRiskDuration,
-    averageDelta: highestPoint.displayIndex - highestPoint.averageIndex,
-  };
+  return clamp(averageIndex + standardDeviation * 2, 0, 1);
 }
 
-function findHighRiskNodes(points: ChartPoint[]) {
-  return points
-    .filter((point, index, array) => {
-      if (point.displayIndex < HIGH_RISK_THRESHOLD) {
-        return false;
-      }
+function getChartRiskCategory(displayIndex: number, confidenceUpper: number, upperSigmaIndex: number): ChartRiskCategory {
+  if (displayIndex > upperSigmaIndex) {
+    return 'high';
+  }
 
-      const previous = array[index - 1]?.displayIndex ?? -1;
-      const next = array[index + 1]?.displayIndex ?? -1;
-      return point.displayIndex >= previous && point.displayIndex >= next;
-    })
-    .sort((left, right) => right.displayIndex - left.displayIndex)
-    .slice(0, 2)
-    .sort((left, right) => right.remainingTime - left.remainingTime);
+  if (confidenceUpper > upperSigmaIndex) {
+    return 'medium';
+  }
+
+  return 'low';
+}
+
+function buildRiskSummary(points: ChartPoint[]): RiskSummary {
+  const highestPoint = points.reduce((max, point) => (point.displayIndex > max.displayIndex ? point : max), points[0]);
+  const highRiskPoints = points.filter((point) => point.riskCategory === 'high');
+  const highestHighRiskPoint = highRiskPoints.length
+    ? highRiskPoints.reduce((max, point) => (point.displayIndex > max.displayIndex ? point : max), highRiskPoints[0])
+    : null;
+
+  return {
+    highestPoint,
+    highestHighRiskPoint,
+    averageDelta: highestPoint.displayIndex - highestPoint.averageIndex,
+  };
 }
 
 function buildTimeTicks([startTime, endTime]: TimeRange) {
@@ -557,14 +624,6 @@ function scaleWindArrowLength(windSpeed: number, points: ChartPoint[]) {
   return 10 + ((windSpeed - minSpeed) / Math.max(1, maxSpeed - minSpeed)) * 14;
 }
 
-function formatHighRiskNodes(nodes: ChartPoint[]) {
-  if (!nodes.length) {
-    return '无高风险';
-  }
-
-  return nodes.map((node) => `${node.remainingTime}s`).join(' / ');
-}
-
 function formatIndex(value: number) {
   return clamp(value, 0, 1).toFixed(2);
 }
@@ -583,28 +642,22 @@ function LegendItem({
   color,
   dashed = false,
   thick = false,
-  marker = false,
 }: {
   label: string;
   color: string;
   dashed?: boolean;
   thick?: boolean;
-  marker?: boolean;
 }) {
   return (
     <div className="inline-flex items-center gap-2">
-      {marker ? (
-        <span className="block h-3 w-3 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: color }} />
-      ) : (
-        <span
-          className={`${thick ? 'h-2.5' : 'h-0'} block w-10 rounded-full border-t-[3px]`}
-          style={{
-            backgroundColor: thick ? color : 'transparent',
-            borderColor: color,
-            borderStyle: dashed ? 'dashed' : 'solid',
-          }}
-        />
-      )}
+      <span
+        className={`${thick ? 'h-2.5' : 'h-0'} block w-10 rounded-full border-t-[3px]`}
+        style={{
+          backgroundColor: thick ? color : 'transparent',
+          borderColor: color,
+          borderStyle: dashed ? 'dashed' : 'solid',
+        }}
+      />
       <span>{label}</span>
     </div>
   );
@@ -615,6 +668,21 @@ function SummaryTile({ label, value }: { label: string; value: string }) {
     <div className="rounded-[16px] border border-border/70 bg-white/82 px-4 py-3">
       <div className="text-xs font-semibold tracking-[0.08em] text-muted-foreground">{label}</div>
       <div className="mt-2 text-lg font-bold leading-tight text-foreground">{value}</div>
+    </div>
+  );
+}
+
+function HighRiskNotice({ point }: { point: ChartPoint | null }) {
+  if (!point) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3 rounded-[18px] border border-[#d9b7a8] bg-[#f8ebe4] px-4 py-3">
+      <div className="text-sm font-semibold text-[#8d4a47]">高风险 - 距离接地{point.remainingTime}秒</div>
+      <div className="mt-1.5 text-sm text-slate-700">
+        指数：{formatIndex(point.displayIndex)} 超月均值{formatDelta(point.displayIndex - point.averageIndex)}
+      </div>
     </div>
   );
 }
@@ -642,7 +710,7 @@ function ConfidenceDetailTable({ point, onClose }: { point: ChartPoint; onClose:
   ];
 
   return (
-    <div className="mt-3 rounded-[18px] border border-border/75 bg-white/92 p-3.5">
+    <div className="mt-2 rounded-[18px] border border-border/75 bg-white/92 p-3.5">
       <div className="flex items-center justify-between gap-4">
         <div className="text-sm font-semibold text-foreground">置信区间明细 - {point.remainingTime}秒</div>
         <button
@@ -670,6 +738,24 @@ const averageDimensionLabels: Record<AverageDimension, string> = {
   season: '季',
   month: '月',
   week: '周',
+};
+
+const chartRiskMeta: Record<ChartRiskCategory, { label: string; stroke: string; pillClass: string }> = {
+  low: {
+    label: '低风险',
+    stroke: '#1f5f8b',
+    pillClass: 'border-[#b7ccda] bg-[#edf6fb] text-[#1f5f8b]',
+  },
+  medium: {
+    label: '中风险',
+    stroke: '#c99a2e',
+    pillClass: 'border-[#e3c979] bg-[#fbf4d6] text-[#8a6c37]',
+  },
+  high: {
+    label: '高风险',
+    stroke: '#b56b4a',
+    pillClass: 'border-[#d9b7a8] bg-[#f8ebe4] text-[#8d4a47]',
+  },
 };
 
 // Stable front-end mock profiles for the seasonal/monthly/weekly average comparison curves.

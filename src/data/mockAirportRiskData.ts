@@ -4,6 +4,15 @@ export type TimeScale = 'month' | 'week' | 'day' | 'hour';
 
 export type AirportLabelPlacement = 'right' | 'left' | 'top' | 'bottom';
 
+export type AirportTrendMonth = `${number}-${string}`;
+
+export type DailyAirportTrendPoint = {
+  day: number;
+  index: number;
+  lower: number;
+  upper: number;
+};
+
 export interface AirportRiskProfile {
   id: string;
   name: string;
@@ -67,7 +76,23 @@ export const airportTrendLabels: Record<TimeScale, string[]> = {
   hour: ['0:00', '4:00', '8:00', '12:00', '16:00', '20:00', '24:00'],
 };
 
-export const defaultAirportId = 'kunming-changshui';
+export const airportRiskDisplayPeriod = '2026年5月';
+
+export const defaultAirportId = 'shanghai-hongqiao';
+
+export const airportTrendYears = Array.from({ length: 7 }, (_, index) => String(2020 + index));
+
+export const airportTrendMonthNumbers = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, '0'));
+
+export const airportMonthlyTrendMonths: Array<{ value: AirportTrendMonth; label: string; days: number }> = airportTrendYears.flatMap((year) =>
+  airportTrendMonthNumbers.map((month) => ({
+    value: `${year}-${month}` as AirportTrendMonth,
+    label: `${year}年${Number(month)}月`,
+    days: getDaysInMonth(Number(year), Number(month)),
+  })),
+);
+
+export const airportTrendComparisonAirportIds = ['shanghai-hongqiao', 'beijing-daxing', 'chengdu-tianfu'] as const;
 
 const airportSeeds: AirportSeed[] = [
   {
@@ -381,68 +406,6 @@ const airportSeeds: AirportSeed[] = [
     windRose: [17, 19, 18, 13, 10, 12],
   },
   {
-    id: 'urumqi-diwopu',
-    name: '乌鲁木齐地窝堡机场',
-    shortName: '地窝堡',
-    city: '乌鲁木齐',
-    type: '西北风场影响机场',
-    longitude: 87.4742,
-    latitude: 43.9071,
-    x: 21.5,
-    y: 21.2,
-    mapXPercent: 26.1,
-    mapYPercent: 24.5,
-    labelDx: 14,
-    labelDy: -12,
-    labelPlacement: 'right',
-    currentIndex: 67,
-    riskLevel: '较高',
-    annualAverage: 58,
-    highRiskDays: 17,
-    mainRiskPeriod: '冬春、全天波动',
-    mainWindDirection: '西北风',
-    windSpeed: 23,
-    mainFactors: ['西北风场影响', '通道风增强'],
-    typicalScenario: '持续西北风背景下，全天波动水平更高。',
-    runwayHeading: '07/25',
-    hotspotLabel: '西北来流区',
-    approachDirection: '由东南向西北',
-    trendSeed: 16,
-    seasonalBias: 6,
-    windRose: [31, 22, 14, 9, 8, 16],
-  },
-  {
-    id: 'lhasa-gonggar',
-    name: '拉萨贡嘎机场',
-    shortName: '贡嘎',
-    city: '拉萨',
-    type: '高原机场',
-    longitude: 90.9119,
-    latitude: 29.2978,
-    x: 38.6,
-    y: 56.6,
-    mapXPercent: 28.1,
-    mapYPercent: 50.2,
-    labelDx: -14,
-    labelDy: -12,
-    labelPlacement: 'left',
-    currentIndex: 79,
-    riskLevel: '高',
-    annualAverage: 61,
-    highRiskDays: 22,
-    mainRiskPeriod: '春季、午后',
-    mainWindDirection: '西南风',
-    windSpeed: 24,
-    mainFactors: ['高原热力差异', '峡谷风增强', '低空切变'],
-    typicalScenario: '峡谷风与热力差异叠加时，高风险点更易集中出现。',
-    runwayHeading: '09/27',
-    hotspotLabel: '峡谷风热点',
-    approachDirection: '由东向西',
-    trendSeed: 17,
-    seasonalBias: 10,
-    windRose: [6, 9, 11, 10, 13, 51],
-  },
-  {
     id: 'guiyang-longdongbao',
     name: '贵阳龙洞堡机场',
     shortName: '龙洞堡',
@@ -555,6 +518,68 @@ export const airportRiskProfiles: AirportRiskProfile[] = airportSeeds.map((airpo
   };
 });
 
+export const airportMonthlyDailyTrends: Record<string, Partial<Record<AirportTrendMonth, DailyAirportTrendPoint[]>>> = {
+  'shanghai-hongqiao': {
+    '2026-05': buildDailyMonthlyTrend(31, 55, 6.2, 2.6, 1.8),
+    '2026-04': buildDailyMonthlyTrend(30, 51, 5.6, 1.8, 1.2),
+    '2026-03': buildDailyMonthlyTrend(31, 48, 5.1, 0.7, 0.8),
+  },
+  'beijing-daxing': {
+    '2026-05': buildDailyMonthlyTrend(31, 46, 4.8, 4.1, -0.5),
+    '2026-04': buildDailyMonthlyTrend(30, 44, 4.4, 3.2, 0.2),
+    '2026-03': buildDailyMonthlyTrend(31, 42, 5.3, 2.3, 1.1),
+  },
+  'chengdu-tianfu': {
+    '2026-05': buildDailyMonthlyTrend(31, 60, 5.8, 5.4, 0.7),
+    '2026-04': buildDailyMonthlyTrend(30, 57, 6.1, 4.4, 1.4),
+    '2026-03': buildDailyMonthlyTrend(31, 53, 5.7, 3.5, 2.1),
+  },
+};
+
+export function getAirportMonthlyDailyTrend(airportId: string, month: AirportTrendMonth) {
+  const storedTrend = airportMonthlyDailyTrends[airportId]?.[month];
+
+  if (storedTrend) {
+    return storedTrend;
+  }
+
+  const profile = airportRiskProfiles.find((airport) => airport.id === airportId);
+  const [yearPart, monthPart] = month.split('-');
+  const year = Number(yearPart);
+  const monthNumber = Number(monthPart);
+  const days = getDaysInMonth(year, monthNumber);
+  const base = ((profile?.annualAverage ?? 0.48) * 100) + ((monthNumber - 6) * 0.9);
+  const amplitude = 4.8 + ((Array.from(airportId).reduce((sum, char) => sum + char.charCodeAt(0), 0) + monthNumber) % 5) * 0.7;
+  const phase = (year - 2020) * 0.9 + monthNumber * 0.62 + (profile?.windSpeed ?? 16) * 0.08;
+  const tilt = ((monthNumber % 5) - 2) * 0.55;
+
+  return buildDailyMonthlyTrend(days, base, amplitude, phase, tilt);
+}
+
 function normalizeAirportIndex(value: number) {
   return Number((value / 100).toFixed(2));
+}
+
+function getDaysInMonth(year: number, month: number) {
+  return new Date(year, month, 0).getDate();
+}
+
+function buildDailyMonthlyTrend(days: number, baseline: number, amplitude: number, phase: number, tilt: number): DailyAirportTrendPoint[] {
+  return Array.from({ length: days }, (_, index) => {
+    const day = index + 1;
+    const smoothWave =
+      Math.sin((index + phase) / 4.4) * amplitude +
+      Math.cos((index + phase * 1.3) / 8.2) * amplitude * 0.45 +
+      tilt * (index / Math.max(days - 1, 1) - 0.5);
+    const synopticPulse = Math.exp(-((index - days * 0.68) ** 2) / 34) * amplitude * 0.36;
+    const value = Math.min(82, Math.max(28, baseline + smoothWave + synopticPulse));
+    const halfWidth = 14.5 + Math.abs(Math.sin((index + phase) / 5.8)) * 3.6;
+
+    return {
+      day,
+      index: normalizeAirportIndex(value),
+      lower: normalizeAirportIndex(Math.max(0, value - halfWidth)),
+      upper: normalizeAirportIndex(Math.min(100, value + halfWidth)),
+    };
+  });
 }

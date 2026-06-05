@@ -1,286 +1,519 @@
 import { useMemo, useState } from 'react';
-import type { AirportRiskProfile, TimeScale } from '../../data/mockAirportRiskData';
-import { airportTrendLabels } from '../../data/mockAirportRiskData';
-import { airportRiskMeta } from '../../utils/airportRiskMeta';
+import {
+  airportMonthlyTrendMonths,
+  airportTrendComparisonAirportIds,
+  airportTrendMonthNumbers,
+  airportTrendYears,
+  getAirportMonthlyDailyTrend,
+  type AirportRiskProfile,
+  type AirportTrendMonth,
+  type DailyAirportTrendPoint,
+} from '../../data/mockAirportRiskData';
 import { formatWindDisturbanceIndex } from '../../utils/indexScale';
 
-type ChartPoint = {
+type ChartPoint = DailyAirportTrendPoint & {
   x: number;
   y: number;
-  value: number;
-  label: string;
-  index: number;
+  lowerY: number;
+  upperY: number;
 };
 
-type TrendEvent = ChartPoint & {
-  type: string;
-  level: string;
+type TrendSeries = {
+  airport: AirportRiskProfile;
+  color: string;
+  fill: string;
+  points: ChartPoint[];
+  lineD: string;
+  bandD: string;
 };
 
-const scaleLabels: Record<TimeScale, string> = {
-  month: '月',
-  week: '周',
-  day: '日',
-  hour: '时',
-};
-
-const axisLabels: Record<TimeScale, string> = {
-  month: '月份',
-  week: '近 52 周',
-  day: '近 30 天',
-  hour: '小时',
+type AirportSummary = {
+  airport: AirportRiskProfile;
+  average: number;
+  peak: number;
+  peakDay: number;
+  range: number;
 };
 
 const chart = {
-  width: 980,
-  height: 460,
-  margin: { top: 42, right: 44, bottom: 82, left: 78 },
+  width: 900,
+  height: 420,
+  margin: { top: 34, right: 34, bottom: 58, left: 70 },
 };
 
-function AirportTrendPanel({
-  airport,
-  scale,
-  onScaleChange,
-}: {
-  airport: AirportRiskProfile;
-  scale: TimeScale;
-  onScaleChange: (scale: TimeScale) => void;
-}) {
-  const [hoveredEvent, setHoveredEvent] = useState<TrendEvent | null>(null);
-  const tone = airportRiskMeta[airport.riskLevel];
-  const labels = airportTrendLabels[scale];
-  const values = airport.trend[scale];
+const seriesColors = [
+  { color: '#1f5f8b', fill: 'rgba(31,95,139,0.16)' },
+  { color: '#b56b4a', fill: 'rgba(181,107,74,0.14)' },
+];
 
-  const { pathD, areaD, points, yTicks } = useMemo(() => {
+function AirportTrendPanel({ airports }: { airports: AirportRiskProfile[] }) {
+  const [selectedYear, setSelectedYear] = useState('2026');
+  const [selectedMonthNumber, setSelectedMonthNumber] = useState('05');
+  const [selectedAirportIds, setSelectedAirportIds] = useState<string[]>(['shanghai-hongqiao']);
+  const [hoveredDay, setHoveredDay] = useState<number | null>(null);
+  const selectedMonth = `${selectedYear}-${selectedMonthNumber}` as AirportTrendMonth;
+
+  const selectableAirports = useMemo(
+    () => airportTrendComparisonAirportIds.map((id) => airports.find((airport) => airport.id === id)).filter(Boolean) as AirportRiskProfile[],
+    [airports],
+  );
+
+  const selectedAirports = useMemo(
+    () => selectedAirportIds.map((id) => airports.find((airport) => airport.id === id)).filter(Boolean) as AirportRiskProfile[],
+    [airports, selectedAirportIds],
+  );
+
+  const selectedMonthLabel = airportMonthlyTrendMonths.find((item) => item.value === selectedMonth)?.label ?? '2026年5月';
+  const maxDays = airportMonthlyTrendMonths.find((item) => item.value === selectedMonth)?.days ?? 31;
+  const availableYears = airportTrendYears;
+  const availableMonths = airportTrendMonthNumbers.map((month) => ({ value: month, label: `${Number(month)}月` }));
+
+  const { series, yTicks, summaries } = useMemo(() => {
     const innerWidth = chart.width - chart.margin.left - chart.margin.right;
     const innerHeight = chart.height - chart.margin.top - chart.margin.bottom;
+    const mappedSeries = selectedAirports.map((airport, index) => {
+      const dailyValues = getAirportMonthlyDailyTrend(airport.id, selectedMonth);
+      const points = dailyValues.map((point) => {
+        const x = chart.margin.left + ((point.day - 1) / Math.max(maxDays - 1, 1)) * innerWidth;
+        const y = chart.margin.top + (1 - point.index) * innerHeight;
+        const lowerY = chart.margin.top + (1 - point.lower) * innerHeight;
+        const upperY = chart.margin.top + (1 - point.upper) * innerHeight;
 
-    const mappedPoints = values.map((value, index) => {
-      const x = chart.margin.left + (index / Math.max(values.length - 1, 1)) * innerWidth;
-      const y = chart.margin.top + (1 - value) * innerHeight;
-      return { x, y, value, label: labels[index], index };
+        return { ...point, x, y, lowerY, upperY };
+      });
+      const lineD = buildLinePath(points, 'y');
+      const upperPath = points.map((point, pointIndex) => `${pointIndex === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.upperY.toFixed(2)}`).join(' ');
+      const lowerPath = [...points].reverse().map((point) => `L ${point.x.toFixed(2)} ${point.lowerY.toFixed(2)}`).join(' ');
+      const bandD = `${upperPath} ${lowerPath} Z`;
+
+      return {
+        airport,
+        color: seriesColors[index]?.color ?? '#5c7c6c',
+        fill: seriesColors[index]?.fill ?? 'rgba(92,124,108,0.14)',
+        points,
+        lineD,
+        bandD,
+      };
     });
 
-    const linePath = mappedPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
-    const areaPath = `${linePath} L ${mappedPoints[mappedPoints.length - 1].x.toFixed(2)} ${(chart.height - chart.margin.bottom).toFixed(2)} L ${mappedPoints[0].x.toFixed(2)} ${(chart.height - chart.margin.bottom).toFixed(2)} Z`;
-
     return {
-      pathD: linePath,
-      areaD: areaPath,
-      points: mappedPoints,
+      series: mappedSeries,
       yTicks: [0, 0.25, 0.5, 0.75, 1],
+      summaries: mappedSeries.map((item) => buildAirportSummary(item.airport, item.points)),
     };
-  }, [labels, values]);
+  }, [maxDays, selectedAirports, selectedMonth]);
 
-  const events = useMemo(() => buildTrendEvents(points, airport.id, scale), [airport.id, points, scale]);
-  const visibleLabelIndexes = useMemo(() => buildVisibleLabelIndexes(points, scale), [points, scale]);
+  const visibleDays = useMemo(() => buildVisibleDays(maxDays), [maxDays]);
+  const hoveredValues = hoveredDay
+    ? series.map((item) => ({
+        airport: item.airport,
+        color: item.color,
+        point: item.points.find((point) => point.day === hoveredDay),
+      }))
+    : [];
+
+  const toggleAirport = (airportId: string) => {
+    setSelectedAirportIds((current) => {
+      if (current.includes(airportId)) {
+        return current.length === 1 ? current : current.filter((id) => id !== airportId);
+      }
+
+      if (current.length < 2) {
+        return [...current, airportId];
+      }
+
+      return [current[0], airportId];
+    });
+  };
 
   return (
     <section className="surface-card p-5 sm:p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div>
         <div>
-          <div className="section-kicker bg-white/70">时序风险</div>
+          <div className="section-kicker bg-white/70">月度时序</div>
           <h2 className="mt-3 text-2xl font-bold text-foreground">风扰指数时序变化</h2>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {(Object.keys(scaleLabels) as TimeScale[]).map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => onScaleChange(item)}
-              className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                scale === item
-                  ? 'border-accent/20 bg-accent text-white shadow-accent'
-                  : 'border-border/80 bg-white/80 text-muted-foreground hover:border-accent/20 hover:text-foreground'
-              }`}
-            >
-              {scaleLabels[item]}
-            </button>
-          ))}
         </div>
       </div>
 
-      <div className="mt-6 rounded-[28px] border border-border/75 bg-white/88 p-4 sm:p-6">
-        <div className="mb-4 flex flex-wrap items-center gap-4 text-sm font-semibold text-muted-foreground">
-          <span className="inline-flex items-center gap-2">
-            <span className="h-1 w-8 rounded-full bg-[#5c7c6c]" />
-            风扰指数
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <span className="h-3 w-3 rotate-45 rounded-[3px] bg-[#bf3945]" />
-            风险事件
-          </span>
-        </div>
-
-        <div className="relative">
-          <svg viewBox={`0 0 ${chart.width} ${chart.height}`} className="h-[430px] w-full lg:h-[500px]" role="img" aria-label="机场风扰指数与风险事件时序图">
-            <defs>
-              <linearGradient id="airportTrendLine" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#5c7c6c" />
-                <stop offset="100%" stopColor={tone.trendColor} />
-              </linearGradient>
-              <linearGradient id="airportTrendArea" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={tone.glowColor} />
-                <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-              </linearGradient>
-            </defs>
-
-            <line
-              x1={chart.margin.left}
-              x2={chart.width - chart.margin.right}
-              y1={chart.height - chart.margin.bottom}
-              y2={chart.height - chart.margin.bottom}
-              stroke="#8a8f87"
-              strokeWidth="1.6"
-            />
-            <line
-              x1={chart.margin.left}
-              x2={chart.margin.left}
-              y1={chart.margin.top}
-              y2={chart.height - chart.margin.bottom}
-              stroke="#8a8f87"
-              strokeWidth="1.6"
-            />
-
-            {yTicks.map((tick) => {
-              const y = chart.margin.top + (1 - tick) * (chart.height - chart.margin.top - chart.margin.bottom);
-              return (
-                <g key={tick}>
-                  <line
-                    x1={chart.margin.left}
-                    x2={chart.width - chart.margin.right}
-                    y1={y}
-                    y2={y}
-                    stroke="#d8cdbb"
-                    strokeDasharray="4 6"
-                  />
-                  <text x={chart.margin.left - 16} y={y + 5} textAnchor="end" fontSize="15" fill="#4f5a52">
-                    {tick.toFixed(2)}
-                  </text>
-                </g>
-              );
-            })}
-
-            {points
-              .filter((point) => visibleLabelIndexes.has(point.index))
-              .map((point) => (
-                <text key={`label-${point.index}`} x={point.x} y={chart.height - 36} textAnchor="middle" fontSize="14" fill="#4f5a52">
-                  {point.label}
-                </text>
-              ))}
-
-            <path d={areaD} fill="url(#airportTrendArea)" />
-            <path d={pathD} fill="none" stroke="url(#airportTrendLine)" strokeWidth="4.2" strokeLinecap="round" strokeLinejoin="round" />
-
-            {points.map((point) => {
-              const isHigh = point.value >= 0.6;
-              return (
-                <g key={`point-${point.index}`}>
-                  {isHigh && <circle cx={point.x} cy={point.y} r="9" fill={tone.glowColor} />}
-                  <circle cx={point.x} cy={point.y} r={isHigh ? 4.6 : 3.7} fill={isHigh ? tone.trendColor : '#5c7c6c'} stroke="#fff9f2" strokeWidth="2.1" />
-                </g>
-              );
-            })}
-
-            {events.map((event) => (
-              <g
-                key={`event-${event.index}-${event.type}`}
-                className="cursor-pointer"
-                onMouseEnter={() => setHoveredEvent(event)}
-                onMouseLeave={() => setHoveredEvent((current) => (current?.index === event.index ? null : current))}
-                onFocus={() => setHoveredEvent(event)}
-                onBlur={() => setHoveredEvent((current) => (current?.index === event.index ? null : current))}
-                tabIndex={0}
-                role="button"
-                aria-label={`${event.label} ${event.type}`}
-              >
-                <circle cx={event.x} cy={event.y} r="13" fill="rgba(191,57,69,0.16)" />
-                <path
-                  d={`M ${event.x} ${event.y - 9} L ${event.x + 8} ${event.y + 7} L ${event.x - 8} ${event.y + 7} Z`}
-                  fill={event.level === '高' ? '#9f2d56' : '#bf3945'}
-                  stroke="#ffffff"
-                  strokeWidth="2"
-                />
-              </g>
+      <div className="mt-5 flex flex-wrap items-end gap-x-3 gap-y-3">
+        <label className="block">
+          <span className="text-xs font-semibold tracking-[0.12em] text-muted-foreground">年份</span>
+          <select
+            value={selectedYear}
+            onChange={(event) => setSelectedYear(event.target.value)}
+            className="mt-2 h-11 w-28 rounded-2xl border border-border/80 bg-white/88 px-4 text-sm font-semibold text-foreground outline-none transition focus:border-accent/30"
+          >
+            {availableYears.map((year) => (
+              <option key={year} value={year}>
+                {year}年
+              </option>
             ))}
+          </select>
+        </label>
 
-            <text
-              x={24}
-              y={(chart.height - chart.margin.bottom + chart.margin.top) / 2}
-              textAnchor="middle"
-              fontSize="16"
-              fontWeight="700"
-              fill="#2f493b"
-              transform={`rotate(-90 24 ${(chart.height - chart.margin.bottom + chart.margin.top) / 2})`}
-            >
-              风扰指数
-            </text>
-            <text
-              x={(chart.width + chart.margin.left - chart.margin.right) / 2}
-              y={chart.height - 8}
-              textAnchor="middle"
-              fontSize="16"
-              fontWeight="700"
-              fill="#2f493b"
-            >
-              {axisLabels[scale]}
-            </text>
-          </svg>
+        <label className="block">
+          <span className="text-xs font-semibold tracking-[0.12em] text-muted-foreground">月份</span>
+          <select
+            value={selectedMonthNumber}
+            onChange={(event) => setSelectedMonthNumber(event.target.value)}
+            className="mt-2 h-11 w-28 rounded-2xl border border-border/80 bg-white/88 px-4 text-sm font-semibold text-foreground outline-none transition focus:border-accent/30"
+          >
+            {availableMonths.map((month) => (
+              <option key={month.value} value={month.value}>
+                {month.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          {hoveredEvent && (
-            <div className="absolute right-4 top-4 z-10 w-[230px] rounded-[20px] border border-[#ead9cf] bg-white/95 p-4 text-sm shadow-soft backdrop-blur-xl">
-              <div className="font-bold text-foreground">{hoveredEvent.label} 风险事件</div>
-              <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-muted-foreground">
-                <span>风扰指数</span>
-                <strong className="text-right text-foreground">{formatWindDisturbanceIndex(hoveredEvent.value)}</strong>
-                <span>事件类型</span>
-                <strong className="text-right text-foreground">{hoveredEvent.type}</strong>
-                <span>事件等级</span>
-                <strong className="text-right text-[#9f2d56]">{hoveredEvent.level}</strong>
+        <div className="ml-0 flex items-end gap-3 lg:ml-8">
+          <div>
+            <div className="mb-2 text-xs text-muted-foreground">可选择 1 个机场进行月度分析，或选择 2 个机场进行对比。</div>
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 items-center text-xs font-semibold tracking-[0.12em] text-muted-foreground">机场选择</div>
+              <div className="flex flex-wrap gap-2">
+                {selectableAirports.map((airport) => {
+                  const selected = selectedAirportIds.includes(airport.id);
+                  return (
+                    <button
+                      key={airport.id}
+                      type="button"
+                      onClick={() => toggleAirport(airport.id)}
+                      className={`h-11 min-w-[112px] rounded-2xl border px-4 text-sm font-semibold transition ${
+                        selected
+                          ? 'border-accent/20 bg-accent text-white shadow-accent'
+                          : 'border-border/80 bg-white/80 text-muted-foreground hover:border-accent/20 hover:text-foreground'
+                      }`}
+                    >
+                      {airport.city}
+                      {airport.shortName}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          )}
+          </div>
         </div>
+      </div>
+
+      <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,0.64fr)_minmax(340px,0.36fr)]">
+        <div className="rounded-[28px] border border-border/75 bg-white/88 p-4 sm:p-5">
+          <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-semibold text-muted-foreground">
+            {series.map((item) => (
+              <span key={item.airport.id} className="inline-flex items-center gap-2">
+                <span className="h-1 w-8 rounded-full" style={{ backgroundColor: item.color }} />
+                {`${item.airport.city}${item.airport.shortName}日平均曲线`}
+              </span>
+            ))}
+            {series.map((item, index) => (
+              <span key={`${item.airport.id}-band-legend`} className="inline-flex items-center gap-2">
+                <span className="h-3 w-8 rounded-full border" style={{ backgroundColor: item.fill, borderColor: item.color }} />
+                {index === 0 ? '置信区间' : `${item.airport.city}${item.airport.shortName} 置信区间`}
+              </span>
+            ))}
+          </div>
+
+          <div className="relative">
+            <svg
+              viewBox={`0 0 ${chart.width} ${chart.height}`}
+              className="h-[360px] w-full lg:h-[390px]"
+              role="img"
+              aria-label={`${selectedMonthLabel}机场日平均风扰指数时序图`}
+            >
+              <line
+                x1={chart.margin.left}
+                x2={chart.width - chart.margin.right}
+                y1={chart.height - chart.margin.bottom}
+                y2={chart.height - chart.margin.bottom}
+                stroke="#8a8f87"
+                strokeWidth="1.6"
+              />
+              <line
+                x1={chart.margin.left}
+                x2={chart.margin.left}
+                y1={chart.margin.top}
+                y2={chart.height - chart.margin.bottom}
+                stroke="#8a8f87"
+                strokeWidth="1.6"
+              />
+
+              {yTicks.map((tick) => {
+                const y = chart.margin.top + (1 - tick) * (chart.height - chart.margin.top - chart.margin.bottom);
+                return (
+                  <g key={tick}>
+                    <line
+                      x1={chart.margin.left}
+                      x2={chart.width - chart.margin.right}
+                      y1={y}
+                      y2={y}
+                      stroke="#d8cdbb"
+                      strokeDasharray="4 6"
+                    />
+                    <text x={chart.margin.left - 16} y={y + 5} textAnchor="end" fontSize="14" fill="#4f5a52">
+                      {tick.toFixed(2)}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {visibleDays.map((day) => {
+                const x = chart.margin.left + ((day - 1) / Math.max(maxDays - 1, 1)) * (chart.width - chart.margin.left - chart.margin.right);
+                return (
+                  <text key={day} x={x} y={chart.height - 28} textAnchor="middle" fontSize="13" fill="#4f5a52">
+                    {day}
+                  </text>
+                );
+              })}
+
+              {series.map((item) => (
+                <path key={`${item.airport.id}-band`} d={item.bandD} fill={item.fill} stroke="none" />
+              ))}
+
+              {series.map((item) => (
+                <path
+                  key={`${item.airport.id}-line`}
+                  d={item.lineD}
+                  fill="none"
+                  stroke={item.color}
+                  strokeWidth="3.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ))}
+
+              {series.map((item) =>
+                item.points.map((point) => (
+                  <circle
+                    key={`${item.airport.id}-${point.day}`}
+                    cx={point.x}
+                    cy={point.y}
+                    r="5.6"
+                    fill="transparent"
+                    className="cursor-crosshair"
+                    onMouseEnter={() => setHoveredDay(point.day)}
+                    onMouseLeave={() => setHoveredDay((current) => (current === point.day ? null : current))}
+                  />
+                )),
+              )}
+
+              {hoveredDay && (
+                <line
+                  x1={chart.margin.left + ((hoveredDay - 1) / Math.max(maxDays - 1, 1)) * (chart.width - chart.margin.left - chart.margin.right)}
+                  x2={chart.margin.left + ((hoveredDay - 1) / Math.max(maxDays - 1, 1)) * (chart.width - chart.margin.left - chart.margin.right)}
+                  y1={chart.margin.top}
+                  y2={chart.height - chart.margin.bottom}
+                  stroke="#9a4f43"
+                  strokeDasharray="5 6"
+                  strokeOpacity="0.45"
+                />
+              )}
+
+              <text
+                x={24}
+                y={(chart.height - chart.margin.bottom + chart.margin.top) / 2}
+                textAnchor="middle"
+                fontSize="15"
+                fontWeight="700"
+                fill="#2f493b"
+                transform={`rotate(-90 24 ${(chart.height - chart.margin.bottom + chart.margin.top) / 2})`}
+              >
+                日平均风扰指数
+              </text>
+              <text
+                x={(chart.width + chart.margin.left - chart.margin.right) / 2}
+                y={chart.height - 6}
+                textAnchor="middle"
+                fontSize="15"
+                fontWeight="700"
+                fill="#2f493b"
+              >
+                日期（日）
+              </text>
+            </svg>
+
+            {hoveredDay && (
+              <div className="absolute right-4 top-4 z-10 w-[250px] rounded-[20px] border border-[#ead9cf] bg-white/95 p-4 text-sm shadow-soft backdrop-blur-xl">
+                <div className="font-bold text-foreground">
+                  {selectedMonthLabel}
+                  {hoveredDay}日
+                </div>
+                <div className="mt-3 space-y-2 text-muted-foreground">
+                  {hoveredValues.map(({ airport, color, point }) =>
+                    point ? (
+                      <div key={airport.id} className="flex items-center justify-between gap-3">
+                        <span className="inline-flex items-center gap-2">
+                          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+                          {airport.city}
+                          {airport.shortName}
+                        </span>
+                        <strong className="text-foreground">{formatWindDisturbanceIndex(point.index)}</strong>
+                      </div>
+                    ) : null,
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <TrendAnalysisPanel monthLabel={selectedMonthLabel} series={series} summaries={summaries} />
       </div>
     </section>
   );
 }
 
-function buildVisibleLabelIndexes(points: ChartPoint[], scale: TimeScale) {
-  if (scale === 'week') {
-    return new Set([0, 7, 15, 23, 31, 39, 47, 51]);
-  }
+function TrendAnalysisPanel({
+  monthLabel,
+  series,
+  summaries,
+}: {
+  monthLabel: string;
+  series: TrendSeries[];
+  summaries: AirportSummary[];
+}) {
+  return (
+    <aside className="flex h-full flex-col gap-4">
+      <div className="rounded-[26px] border border-border/75 bg-white/85 p-4">
+        <div className="text-sm font-semibold text-foreground">风向分布</div>
+        <div className="mt-4 space-y-4">
+          {series.map((item) => (
+            <WindRoseSummary key={item.airport.id} airport={item.airport} color={item.color} />
+          ))}
+        </div>
+      </div>
 
-  if (scale === 'day') {
-    return new Set([0, 4, 9, 14, 19, 24, 29]);
-  }
+      <div className="rounded-[26px] border border-border/75 bg-white/85 p-4">
+        <div className="text-sm font-semibold text-foreground">关键摘要</div>
+        <div className="mt-4 space-y-3">
+          {summaries.map((summary) => (
+            <SummaryBlock key={summary.airport.id} summary={summary} />
+          ))}
+        </div>
+      </div>
 
-  return new Set(points.map((point) => point.index));
+      <div className="rounded-[26px] border border-border/75 bg-white/85 p-4">
+        <div className="text-sm font-semibold text-foreground">AI 分析结果</div>
+        <p className="mt-3 text-sm leading-7 text-muted-foreground">{buildAiAnalysis(monthLabel, summaries)}</p>
+      </div>
+    </aside>
+  );
 }
 
-function buildTrendEvents(points: ChartPoint[], airportId: string, scale: TimeScale): TrendEvent[] {
-  const eventTypes = ['不稳定进近', '风切变告警', '复飞风险', '姿态修正偏大'];
-  const seed = Array.from(airportId).reduce((sum, char) => sum + char.charCodeAt(0), scale.length * 17);
-  const count = scale === 'hour' ? 2 : scale === 'month' ? 3 : 4;
-  const used = new Set<number>();
+function WindRoseSummary({ airport, color }: { airport: AirportRiskProfile; color: string }) {
+  const windSummary = buildWindSummary(airport.windRose);
 
-  return Array.from({ length: count }, (_, order) => {
-    const preferred = Math.round(((seed * (order + 3) + order * 11) % Math.max(points.length, 1)));
-    let index = Math.min(points.length - 1, Math.max(0, preferred));
+  return (
+    <div className="rounded-[22px] bg-background/90 px-3.5 py-3">
+      <div className="flex items-center justify-between gap-3 text-sm font-semibold text-foreground">
+        <span>
+          {airport.city}
+          {airport.shortName}
+        </span>
+        <span className="text-xs text-muted-foreground">主峰 {windSummary[0]?.label}</span>
+      </div>
+      <div className="mt-3 space-y-2">
+        {windSummary.map((item) => (
+          <div key={item.label}>
+            <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+              <span>{item.label}</span>
+              <span>{item.value}</span>
+            </div>
+            <div className="mt-1 h-2 rounded-full bg-[#ebe1d3]">
+              <div className="h-2 rounded-full" style={{ width: `${30 + item.ratio * 58}%`, backgroundColor: color }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-    while (used.has(index) && index < points.length - 1) {
-      index += 1;
-    }
+function SummaryBlock({ summary }: { summary: AirportSummary }) {
+  return (
+    <div className="rounded-[20px] bg-background/90 px-3.5 py-3">
+      <div className="text-sm font-semibold text-foreground">
+        {summary.airport.city}
+        {summary.airport.shortName}
+      </div>
+      <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+        <Metric label="月均" value={formatWindDisturbanceIndex(summary.average)} />
+        <Metric label="峰值" value={`${formatWindDisturbanceIndex(summary.peak)} / ${summary.peakDay}日`} />
+        <Metric label="波动" value={formatWindDisturbanceIndex(summary.range)} />
+      </div>
+      <div className="mt-3 text-sm leading-6 text-muted-foreground">{summary.airport.typicalScenario}</div>
+    </div>
+  );
+}
 
-    used.add(index);
-    const point = points[index];
-    return {
-      ...point,
-      type: eventTypes[(seed + order) % eventTypes.length],
-      level: point.value >= 0.68 ? '高' : '较高',
-    };
-  }).sort((left, right) => left.index - right.index);
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div>{label}</div>
+      <div className="mt-1 font-semibold text-foreground">{value}</div>
+    </div>
+  );
+}
+
+function buildLinePath(points: ChartPoint[], yKey: 'y' | 'lowerY' | 'upperY') {
+  return points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point[yKey].toFixed(2)}`).join(' ');
+}
+
+function buildVisibleDays(maxDays: number) {
+  return [1, 5, 10, 15, 20, 25, maxDays];
+}
+
+function buildAirportSummary(airport: AirportRiskProfile, points: ChartPoint[]): AirportSummary {
+  const values = points.map((point) => point.index);
+  const average = values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1);
+  const peakPoint = points.reduce((max, point) => (point.index > max.index ? point : max), points[0]);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+
+  return {
+    airport,
+    average: Number(average.toFixed(2)),
+    peak: peakPoint?.index ?? 0,
+    peakDay: peakPoint?.day ?? 1,
+    range: Number((max - min).toFixed(2)),
+  };
+}
+
+function buildWindSummary(windRose: number[]) {
+  const labels = ['北', '东北', '东南', '南', '西南', '西北'];
+  const maxValue = Math.max(...windRose, 1);
+
+  return windRose
+    .map((value, index) => ({
+      label: labels[index],
+      value,
+      ratio: value / maxValue,
+    }))
+    .sort((left, right) => right.value - left.value)
+    .slice(0, 3);
+}
+
+function buildAiAnalysis(monthLabel: string, summaries: AirportSummary[]) {
+  if (summaries.length === 1) {
+    const [summary] = summaries;
+    return `${monthLabel}，${summary.airport.city}${summary.airport.shortName}日平均风扰指数整体处于${describeAverage(summary.average)}区间，峰值出现在${summary.peakDay}日附近。结合主导风向与扰动来源，可作为月度运行环境对比的辅助观察。`;
+  }
+
+  const sorted = [...summaries].sort((left, right) => right.average - left.average);
+  const delta = Math.abs(sorted[0].average - sorted[1].average);
+
+  return `${monthLabel}，${sorted[0].airport.city}${sorted[0].airport.shortName}月均值略高于${sorted[1].airport.city}${sorted[1].airport.shortName}，差值约${formatWindDisturbanceIndex(delta)}。两条曲线均有阶段性波动，建议结合风向分布与局地地形背景进行展示性解读。`;
+}
+
+function describeAverage(value: number) {
+  if (value >= 0.6) {
+    return '偏高';
+  }
+
+  if (value >= 0.48) {
+    return '中等';
+  }
+
+  return '较平稳';
 }
 
 export default AirportTrendPanel;

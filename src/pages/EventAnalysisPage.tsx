@@ -1,10 +1,16 @@
 import { useMemo, useState } from 'react';
 import { ArrowLeft, LogOut } from 'lucide-react';
-import EventAttributionPanel from '../components/event-analysis/EventAttributionPanel';
-import EventFocusList from '../components/event-analysis/EventFocusList';
+import EventDailyTimeline from '../components/event-analysis/EventDailyTimeline';
 import EventScatterPlot from '../components/event-analysis/EventScatterPlot';
 import EventSummaryPanel from '../components/event-analysis/EventSummaryPanel';
-import { defaultEventAirportId, eventAnalysisAirports } from '../data/mockEventAnalysisData';
+import {
+  defaultEventAirportId,
+  eventAnalysisAirports,
+  eventQuadrantMeta,
+  getDailyEventCounts,
+  getMonthlyEventAirportProfile,
+  getMonthlyEventAirportProfiles,
+} from '../data/mockEventAnalysisData';
 
 type EventAnalysisPageProps = {
   onLogout: () => void;
@@ -12,11 +18,21 @@ type EventAnalysisPageProps = {
 
 function EventAnalysisPage({ onLogout }: EventAnalysisPageProps) {
   const [selectedAirportId, setSelectedAirportId] = useState(defaultEventAirportId);
+  const [selectedYear, setSelectedYear] = useState('2026');
+  const [selectedMonth, setSelectedMonth] = useState('05');
+  const [isAuxiliaryOpen, setIsAuxiliaryOpen] = useState(false);
 
-  const selectedAirport = useMemo(
+  const monthlyAirports = useMemo(() => getMonthlyEventAirportProfiles(selectedYear, selectedMonth), [selectedMonth, selectedYear]);
+  const selectedBaseAirport = useMemo(
     () => eventAnalysisAirports.find((airport) => airport.id === selectedAirportId) ?? eventAnalysisAirports[0],
     [selectedAirportId],
   );
+  const selectedAirport = useMemo(
+    () => getMonthlyEventAirportProfile(selectedBaseAirport, selectedYear, selectedMonth),
+    [selectedBaseAirport, selectedMonth, selectedYear],
+  );
+  const dailyEvents = useMemo(() => getDailyEventCounts(selectedBaseAirport, selectedYear, selectedMonth), [selectedBaseAirport, selectedMonth, selectedYear]);
+  const monthLabel = `${selectedYear}年${Number(selectedMonth)}月`;
 
   return (
     <div className="min-h-screen px-4 pb-10 pt-4 sm:px-6 lg:px-8">
@@ -43,23 +59,41 @@ function EventAnalysisPage({ onLogout }: EventAnalysisPageProps) {
         <section className="surface-card px-6 py-7 sm:px-8">
           <h1 className="text-3xl font-bold leading-tight sm:text-4xl lg:text-[3.15rem]">运行事件关联与归因分析</h1>
           <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-            从机场层面观察风扰指数与降落事件的关系，并对重点机场进行归因分析
+            面向单机场、单月份观察风扰指数与降落事件的时序关系，并提供归因结构辅助解读
           </p>
         </section>
 
-        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(300px,0.3fr)_minmax(0,0.7fr)]">
+        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(420px,0.4fr)_minmax(0,0.6fr)]">
           <EventSummaryPanel
             airports={eventAnalysisAirports}
             airport={selectedAirport}
             selectedAirportId={selectedAirportId}
+            selectedYear={selectedYear}
+            selectedMonth={selectedMonth}
             onSelect={setSelectedAirportId}
+            onYearChange={setSelectedYear}
+            onMonthChange={setSelectedMonth}
           />
-          <EventScatterPlot airports={eventAnalysisAirports} selectedAirportId={selectedAirportId} onSelect={setSelectedAirportId} />
+          <EventDailyTimeline airport={selectedAirport} year={selectedYear} month={selectedMonth} data={dailyEvents} />
         </section>
 
-        <section className="mt-6 grid gap-6 xl:grid-cols-2">
-          <EventAttributionPanel airport={selectedAirport} />
-          <EventFocusList airports={eventAnalysisAirports} selectedAirportId={selectedAirportId} onSelect={setSelectedAirportId} />
+        <section className="mt-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-border/70 bg-white/60 px-5 py-4">
+            <div>
+              <div className="section-kicker bg-white/70">辅助分析</div>
+              <div className="mt-2 text-sm text-muted-foreground">辅助指标与指数-事件象限图默认收起，展开后用于补充观察。</div>
+            </div>
+            <button type="button" onClick={() => setIsAuxiliaryOpen((value) => !value)} className="action-secondary">
+              {isAuxiliaryOpen ? '收起辅助分析' : '展开辅助分析'}
+            </button>
+          </div>
+
+          {isAuxiliaryOpen && (
+            <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(320px,0.34fr)_minmax(0,0.66fr)]">
+              <AuxiliaryMetrics airport={selectedAirport} monthLabel={monthLabel} />
+              <EventScatterPlot airports={monthlyAirports} selectedAirportId={selectedAirportId} onSelect={setSelectedAirportId} />
+            </div>
+          )}
         </section>
 
         <section className="mt-6 rounded-[28px] border border-amber-300/70 bg-amber-50/90 px-5 py-5 shadow-sm">
@@ -68,6 +102,36 @@ function EventAnalysisPage({ onLogout }: EventAnalysisPageProps) {
           </p>
         </section>
       </main>
+    </div>
+  );
+}
+
+function AuxiliaryMetrics({ airport, monthLabel }: { airport: ReturnType<typeof getMonthlyEventAirportProfile>; monthLabel: string }) {
+  const quadrant = eventQuadrantMeta[airport.quadrant];
+
+  return (
+    <section className="surface-card p-5 sm:p-6">
+      <div className="section-kicker bg-white/70">辅助分析指标</div>
+      <h2 className="mt-4 text-2xl font-bold text-foreground">{monthLabel}辅助观察</h2>
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+        <MetricTile label="高风险时段" value={airport.highRiskPeriod} />
+        <MetricTile label="主要扰动来源" value={airport.mainFactor} />
+        <MetricTile label="相关性评分" value={airport.correlationScore.toFixed(2)} />
+        <div className="rounded-[20px] border border-border/70 bg-white/85 p-3.5">
+          <div className="text-xs text-muted-foreground">象限类别</div>
+          <div className={`mt-2 inline-flex rounded-full border px-3 py-1.5 text-xs font-semibold ${quadrant.pillClass}`}>{airport.quadrant}</div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MetricTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[20px] border border-border/70 bg-white/85 p-3.5">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-2 text-sm font-semibold leading-6 text-foreground">{value}</div>
     </div>
   );
 }
