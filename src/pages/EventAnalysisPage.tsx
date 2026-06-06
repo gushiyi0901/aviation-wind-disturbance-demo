@@ -42,7 +42,7 @@ function EventAnalysisPage({ onLogout }: EventAnalysisPageProps) {
     <div className="min-h-screen px-4 pb-10 pt-4 sm:px-6 lg:px-8">
       <header className="glass-nav mx-auto flex max-w-[1680px] flex-col gap-3 px-4 py-3 sm:px-5 md:flex-row md:items-center md:justify-between">
         <div className="inline-flex h-10 items-center rounded-full border border-accent/20 bg-accent/10 px-3 text-sm font-semibold text-accent">
-          进近风扰风险指数
+          操纵响应风扰指数
         </div>
 
         <div className="text-sm font-semibold text-foreground sm:text-base">运行事件关联与归因分析</div>

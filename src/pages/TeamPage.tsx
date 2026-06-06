@@ -16,7 +16,7 @@ function TeamPage({ onLogout }: TeamPageProps) {
               href="/"
               className="inline-flex h-10 items-center rounded-full border border-accent/20 bg-accent/10 px-3 text-sm font-semibold text-accent"
             >
-              进近风扰风险指数
+          操纵响应风扰指数
             </a>
             <h1 className="mt-4 text-3xl font-bold leading-tight text-foreground sm:text-4xl">价值说明</h1>
           </div>
