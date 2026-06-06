@@ -2,6 +2,15 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 import { AlertTriangle, Gauge, Navigation, RotateCcw, Wind, X } from 'lucide-react';
 import type { AverageDimension, TimeRange } from './approachAnalysisTypes';
 import type { ApproachPoint } from '../../data/mockApproachData';
+import {
+  formatWindDisturbanceIndex,
+  normalizeWindDisturbanceIndex,
+  toWindDisturbanceIndex,
+  windIndexDeltaFromUnit,
+  windIndexFromUnit,
+  WIND_DISTURBANCE_INDEX_MAX,
+  WIND_DISTURBANCE_INDEX_MIN,
+} from '../../utils/indexScale';
 
 type ApproachChartProps = {
   data: ApproachPoint[];
@@ -191,7 +200,7 @@ function ApproachChart({
                 <g key={tick}>
                   <line x1={MARGIN.left} x2={CHART_WIDTH - MARGIN.right} y1={y} y2={y} stroke="#d6d6cc" strokeDasharray="4 6" />
                   <text x={MARGIN.left - 16} y={y + 5} textAnchor="end" fontSize="15" fill="#4f5b53">
-                    {tick.toFixed(2)}
+                    {formatIndex(tick)}
                   </text>
                 </g>
               );
@@ -370,7 +379,7 @@ function buildChartModel(data: ApproachPoint[], dimension: AverageDimension, lan
       confidenceBandD: '',
       riskSegments: [] as RiskSegment[],
       xTicks: [] as number[],
-      yTicks: [0, 0.25, 0.5, 0.75, 1],
+      yTicks: [WIND_DISTURBANCE_INDEX_MIN, 1.25, 1.75, 2.25, WIND_DISTURBANCE_INDEX_MAX],
       riskSummary: null as RiskSummary | null,
       windPoints: [] as ChartPoint[],
     };
@@ -415,7 +424,7 @@ function buildChartModel(data: ApproachPoint[], dimension: AverageDimension, lan
     confidenceBandD: buildConfidenceBandPath(points),
     riskSegments: buildRiskSegments(points),
     xTicks: buildTimeTicks(selectedTimeRange),
-    yTicks: [0, 0.25, 0.5, 0.75, 1],
+    yTicks: [WIND_DISTURBANCE_INDEX_MIN, 1.25, 1.75, 2.25, WIND_DISTURBANCE_INDEX_MAX],
     riskSummary: buildRiskSummary(points),
     windPoints: points,
   };
@@ -492,33 +501,30 @@ function interpolateNumber(start: number, end: number, t: number) {
 }
 
 function normalizeIndexForDisplay(value: number) {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-
-  return clamp(value <= 1 ? value : value / 100, 0, 1);
+  return toWindDisturbanceIndex(value);
 }
 
 function buildConfidenceInterval(point: ApproachPoint, data: ApproachPoint[], index: number, displayIndex: number) {
   if (Number.isFinite(point.ciLower) && Number.isFinite(point.ciUpper)) {
     return widenConfidenceInterval({
-      lower: normalizeIndexForDisplay(point.ciLower),
-      upper: normalizeIndexForDisplay(point.ciUpper),
+      lower: toWindDisturbanceIndex(point.ciLower),
+      upper: toWindDisturbanceIndex(point.ciUpper),
       center: displayIndex,
-      minHalfWidth: 0.18,
+      minHalfWidth: windIndexDeltaFromUnit(0.18),
     });
   }
 
   // Front-end demonstration only: this approximates an interval from recent local volatility and is not real statistical inference.
   const start = Math.max(0, index - 4);
-  const recent = data.slice(start, index + 1).map((item) => normalizeIndexForDisplay(item.turbulenceIndex));
+  const recent = data.slice(start, index + 1).map((item) => normalizeWindDisturbanceIndex(item.turbulenceIndex));
   const deltas = recent.slice(1).map((value, deltaIndex) => Math.abs(value - recent[deltaIndex]));
   const volatility = deltas.length ? deltas.reduce((sum, value) => sum + value, 0) / deltas.length : 0;
-  const width = clamp((0.09 + volatility * 1.05 + displayIndex * 0.055) * 2, 0.16, 0.42);
+  const displayUnit = normalizeWindDisturbanceIndex(displayIndex);
+  const width = windIndexDeltaFromUnit(clamp((0.09 + volatility * 1.05 + displayUnit * 0.055) * 2, 0.16, 0.42));
 
   return {
-    lower: clamp(displayIndex - width, 0, 1),
-    upper: clamp(displayIndex + width, 0, 1),
+    lower: clamp(displayIndex - width, WIND_DISTURBANCE_INDEX_MIN, WIND_DISTURBANCE_INDEX_MAX),
+    upper: clamp(displayIndex + width, WIND_DISTURBANCE_INDEX_MIN, WIND_DISTURBANCE_INDEX_MAX),
   };
 }
 
@@ -537,8 +543,8 @@ function widenConfidenceInterval({
   const halfWidth = Math.max((upper - lower) / 2, minHalfWidth);
 
   return {
-    lower: clamp(midpoint - halfWidth, 0, 1),
-    upper: clamp(midpoint + halfWidth, 0, 1),
+    lower: clamp(midpoint - halfWidth, WIND_DISTURBANCE_INDEX_MIN, WIND_DISTURBANCE_INDEX_MAX),
+    upper: clamp(midpoint + halfWidth, WIND_DISTURBANCE_INDEX_MIN, WIND_DISTURBANCE_INDEX_MAX),
   };
 }
 
@@ -558,8 +564,9 @@ function buildAverageIndex({
   const secondaryBump = Math.exp(-((remainingTime - profile.secondaryPeakAt) ** 2) / (profile.spread * 1.25)) * profile.secondaryLift;
   const wave = Math.sin((index + profile.phase) / profile.period) * profile.wave;
   const anchored = profile.baseline + approachBump + secondaryBump + wave;
+  const currentUnit = normalizeWindDisturbanceIndex(currentIndex);
 
-  return clamp(anchored * 0.78 + currentIndex * 0.22, 0, 1);
+  return windIndexFromUnit(anchored * 0.78 + currentUnit * 0.22);
 }
 
 function buildUpperSigmaIndex(averageIndex: number, index: number, remainingTime: number) {
@@ -567,7 +574,7 @@ function buildUpperSigmaIndex(averageIndex: number, index: number, remainingTime
   const localWave = (Math.sin(index / 4.6) + 1) * 0.006;
   const standardDeviation = (0.055 + landingSensitivity + localWave) * 2;
 
-  return clamp(averageIndex + standardDeviation * 2, 0, 1);
+  return clamp(averageIndex + windIndexDeltaFromUnit(standardDeviation * 2), WIND_DISTURBANCE_INDEX_MIN, WIND_DISTURBANCE_INDEX_MAX);
 }
 
 function getChartRiskCategory(displayIndex: number, confidenceUpper: number, upperSigmaIndex: number): ChartRiskCategory {
@@ -609,7 +616,7 @@ function buildTimeTicks([startTime, endTime]: TimeRange) {
 }
 
 function toChartY(value: number) {
-  return MARGIN.top + (1 - clamp(value, 0, 1)) * (PLOT_BOTTOM - MARGIN.top);
+  return MARGIN.top + (1 - normalizeWindDisturbanceIndex(value)) * (PLOT_BOTTOM - MARGIN.top);
 }
 
 function toChartX(time: number, [startTime, endTime]: TimeRange) {
@@ -625,12 +632,16 @@ function scaleWindArrowLength(windSpeed: number, points: ChartPoint[]) {
 }
 
 function formatIndex(value: number) {
-  return clamp(value, 0, 1).toFixed(2);
+  return formatWindDisturbanceIndex(value);
 }
 
 function formatDelta(value: number) {
   const prefix = value >= 0 ? '+' : '';
   return `${prefix}${value.toFixed(2)}`;
+}
+
+function formatDeltaMagnitude(value: number) {
+  return Math.max(0, value).toFixed(2);
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -704,7 +715,7 @@ function ConfidenceDetailTable({ point, onClose }: { point: ChartPoint; onClose:
     ['风扰指数', formatIndex(point.displayIndex)],
     ['置信下界', formatIndex(point.confidenceLower)],
     ['置信上界', formatIndex(point.confidenceUpper)],
-    ['区间宽度', formatIndex(point.confidenceUpper - point.confidenceLower)],
+    ['区间宽度', formatDeltaMagnitude(point.confidenceUpper - point.confidenceLower)],
     ['风速', `${point.windSpeed} kt`],
     ['风向', `${point.windDirection}°`],
   ];

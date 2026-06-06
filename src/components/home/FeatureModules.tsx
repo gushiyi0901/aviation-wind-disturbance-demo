@@ -147,7 +147,7 @@ function ApproachPreview() {
           <div className="mt-2 space-y-1.5 text-sm text-foreground">
             <div>风向：236°</div>
             <div>风速：18 kt</div>
-            <div className="font-semibold text-accent-secondary">指数：0.76</div>
+              <div className="font-semibold text-accent-secondary">指数：2.31</div>
           </div>
         </div>
       </div>
@@ -210,7 +210,7 @@ function AirportPreview() {
               </div>
               <div className="flex items-center justify-between">
                 <span>当前指数</span>
-                <span className="font-semibold text-accent-secondary">0.72</span>
+              <span className="font-semibold text-accent-secondary">2.23</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>高风险时段</span>

@@ -1,3 +1,5 @@
+import { toWindDisturbanceIndex, WIND_DISTURBANCE_INDEX_MAX, WIND_DISTURBANCE_INDEX_MIN } from './indexScale';
+
 export type ParsedFlightIndexRow = {
   time: number;
   index: number;
@@ -7,7 +9,13 @@ export type ParsedFlightIndexRow = {
   windDirection?: number;
 };
 
-const normalizeIndexValue = (value: number) => clamp(value <= 1 ? value : value / 100, 0, 1);
+const normalizeIndexValue = (value: number) => {
+  if (value >= WIND_DISTURBANCE_INDEX_MIN && value <= WIND_DISTURBANCE_INDEX_MAX) {
+    return toWindDisturbanceIndex(value);
+  }
+
+  return clamp(value <= 1 ? value : value / 100, 0, 1);
+};
 
 type ParseFlightIndexFileResult = {
   rows: ParsedFlightIndexRow[];

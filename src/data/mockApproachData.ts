@@ -1,5 +1,5 @@
 import { getRiskLevel, type RiskLevel } from '../utils/riskLevel';
-import { formatWindDisturbanceIndex } from '../utils/indexScale';
+import { formatWindDisturbanceIndex, windIndexDeltaFromUnit, windIndexFromUnit, WIND_DISTURBANCE_INDEX_MAX, WIND_DISTURBANCE_INDEX_MIN } from '../utils/indexScale';
 
 export type ApproachPoint = {
   time: number;
@@ -46,15 +46,15 @@ const buildApproachPoint = (time: number): ApproachPoint => {
   const lowAltitudeLift = Math.max(0, (260 - altitude) / 14);
   const base = 26 + Math.sin(time / 4.1) * 7 + Math.cos(time / 2.7) * 4 + (1000 - altitude) / 55;
   const rawIndex = clamp(Math.round(base + peak18 + peak28 + peak37 + lowAltitudeLift), 18, 88);
-  const turbulenceIndex = Number((rawIndex / 100).toFixed(2));
-  const localWidth = clamp(0.08 + Math.abs(Math.sin(time / 3.5)) * 0.06 + (turbulenceIndex >= 0.6 ? 0.04 : 0), 0.08, 0.2);
+  const turbulenceIndex = windIndexFromUnit(rawIndex / 100);
+  const localWidth = windIndexDeltaFromUnit(clamp(0.08 + Math.abs(Math.sin(time / 3.5)) * 0.06 + (turbulenceIndex > 2.3 ? 0.04 : 0), 0.08, 0.2));
 
   return {
     time,
     altitude,
     turbulenceIndex,
-    ciLower: Number(clamp(turbulenceIndex - localWidth, 0, 1).toFixed(2)),
-    ciUpper: Number(clamp(turbulenceIndex + localWidth, 0, 1).toFixed(2)),
+    ciLower: Number(clamp(turbulenceIndex - localWidth, WIND_DISTURBANCE_INDEX_MIN, WIND_DISTURBANCE_INDEX_MAX).toFixed(2)),
+    ciUpper: Number(clamp(turbulenceIndex + localWidth, WIND_DISTURBANCE_INDEX_MIN, WIND_DISTURBANCE_INDEX_MAX).toFixed(2)),
     windSpeed,
     windDirection,
     riskLevel: getRiskLevel(turbulenceIndex),

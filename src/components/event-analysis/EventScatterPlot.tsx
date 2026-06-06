@@ -1,7 +1,7 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import type { EventAnalysisAirport } from '../../data/mockEventAnalysisData';
 import { eventQuadrantMeta, eventScatterThresholds } from '../../data/mockEventAnalysisData';
-import { formatWindDisturbanceIndex } from '../../utils/indexScale';
+import { formatWindDisturbanceIndex, WIND_DISTURBANCE_INDEX_MAX, WIND_DISTURBANCE_INDEX_MIN } from '../../utils/indexScale';
 
 type EventScatterPlotProps = {
   airports: EventAnalysisAirport[];
@@ -12,7 +12,7 @@ type EventScatterPlotProps = {
 const WIDTH = 860;
 const HEIGHT = 520;
 const MARGIN = { top: 32, right: 34, bottom: 74, left: 78 };
-const MIN_INDEX_SPAN = 0.24;
+const MIN_INDEX_SPAN = 0.52;
 
 function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatterPlotProps) {
   const [hoveredAirportId, setHoveredAirportId] = useState<string | null>(null);
@@ -21,9 +21,9 @@ function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatte
   const rawXMin = Math.min(...indexValues);
   const rawXMax = Math.max(...indexValues);
   const rawXCenter = (rawXMin + rawXMax) / 2;
-  const xSpan = Math.max(rawXMax - rawXMin + 0.12, MIN_INDEX_SPAN);
-  const xMin = Math.max(0, rawXCenter - xSpan / 2);
-  const xMax = Math.min(1, rawXCenter + xSpan / 2);
+  const xSpan = Math.max(rawXMax - rawXMin + 0.26, MIN_INDEX_SPAN);
+  const xMin = Math.max(WIND_DISTURBANCE_INDEX_MIN, rawXCenter - xSpan / 2);
+  const xMax = Math.min(WIND_DISTURBANCE_INDEX_MAX, rawXCenter + xSpan / 2);
   const yMin = Math.max(0, Math.min(...airports.map((airport) => airport.eventCount)) - 8);
   const yMax = Math.max(...airports.map((airport) => airport.eventCount)) + 8;
   const innerWidth = WIDTH - MARGIN.left - MARGIN.right;
@@ -60,7 +60,7 @@ function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatte
       }
     : undefined;
 
-  const xTicks = [0.45, 0.55, 0.65, 0.75];
+  const xTicks = Array.from({ length: 4 }, (_, index) => Number((xMin + ((xMax - xMin) * index) / 3).toFixed(2)));
   const yTicks = [35, 45, 55, 65, 75];
 
   return (
@@ -92,7 +92,7 @@ function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatte
               <g key={tick}>
                 <line x1={x} x2={x} y1={MARGIN.top} y2={HEIGHT - MARGIN.bottom} stroke="#ece2d4" />
                 <text x={x} y={HEIGHT - MARGIN.bottom + 26} textAnchor="middle" fontSize="12" fill="#6d756e">
-                  {tick}
+                  {formatWindDisturbanceIndex(tick)}
                 </text>
               </g>
             );

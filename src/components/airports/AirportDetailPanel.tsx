@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { ChevronDown, Compass, MapPinned, Waves } from 'lucide-react';
 import { airportTrendMonthNumbers, airportTrendYears, type AirportRiskProfile } from '../../data/mockAirportRiskData';
 import { airportRiskMeta } from '../../utils/airportRiskMeta';
-import { formatWindDisturbanceIndex, indexToPercent } from '../../utils/indexScale';
+import { formatWindDisturbanceIndex, indexToPercent, WIND_DISTURBANCE_INDEX_MAX, WIND_DISTURBANCE_INDEX_MIN } from '../../utils/indexScale';
 
 type AirportDetailPanelProps = {
   airports: AirportRiskProfile[];
@@ -150,9 +150,9 @@ function MetricStack({ label, value }: { label: string; value: number }) {
 
 function buildPredictionInterval(airport: AirportRiskProfile) {
   const deviation = Math.abs(airport.currentIndex - airport.annualAverage);
-  const halfWidth = Math.max(0.04, Math.min(0.16, 0.04 + airport.windSpeed * 0.0018 + deviation * 0.12));
-  const lower = Math.max(0, airport.currentIndex - halfWidth);
-  const upper = Math.min(1, airport.currentIndex + halfWidth);
+  const halfWidth = Math.max(0.12, Math.min(0.42, 0.12 + airport.windSpeed * 0.004 + deviation * 0.18));
+  const lower = Math.max(WIND_DISTURBANCE_INDEX_MIN, airport.currentIndex - halfWidth);
+  const upper = Math.min(WIND_DISTURBANCE_INDEX_MAX, airport.currentIndex + halfWidth);
 
   return {
     lower: Number(lower.toFixed(2)),

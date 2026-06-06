@@ -9,7 +9,14 @@ import {
   type AirportTrendMonth,
   type DailyAirportTrendPoint,
 } from '../../data/mockAirportRiskData';
-import { formatWindDisturbanceIndex } from '../../utils/indexScale';
+import {
+  formatWindDisturbanceIndex,
+  normalizeWindDisturbanceIndex,
+  WIND_DISTURBANCE_INDEX_MAX,
+  WIND_DISTURBANCE_INDEX_MIN,
+  WIND_DISTURBANCE_INDEX_NORMAL_HIGH,
+  WIND_DISTURBANCE_INDEX_NORMAL_LOW,
+} from '../../utils/indexScale';
 
 type ChartPoint = DailyAirportTrendPoint & {
   x: number;
@@ -75,9 +82,9 @@ function AirportTrendPanel({ airports }: { airports: AirportRiskProfile[] }) {
       const dailyValues = getAirportMonthlyDailyTrend(airport.id, selectedMonth);
       const points = dailyValues.map((point) => {
         const x = chart.margin.left + ((point.day - 1) / Math.max(maxDays - 1, 1)) * innerWidth;
-        const y = chart.margin.top + (1 - point.index) * innerHeight;
-        const lowerY = chart.margin.top + (1 - point.lower) * innerHeight;
-        const upperY = chart.margin.top + (1 - point.upper) * innerHeight;
+        const y = chart.margin.top + (1 - normalizeWindDisturbanceIndex(point.index)) * innerHeight;
+        const lowerY = chart.margin.top + (1 - normalizeWindDisturbanceIndex(point.lower)) * innerHeight;
+        const upperY = chart.margin.top + (1 - normalizeWindDisturbanceIndex(point.upper)) * innerHeight;
 
         return { ...point, x, y, lowerY, upperY };
       });
@@ -98,7 +105,7 @@ function AirportTrendPanel({ airports }: { airports: AirportRiskProfile[] }) {
 
     return {
       series: mappedSeries,
-      yTicks: [0, 0.25, 0.5, 0.75, 1],
+      yTicks: [WIND_DISTURBANCE_INDEX_MIN, 1.25, WIND_DISTURBANCE_INDEX_NORMAL_LOW, WIND_DISTURBANCE_INDEX_NORMAL_HIGH, WIND_DISTURBANCE_INDEX_MAX],
       summaries: mappedSeries.map((item) => buildAirportSummary(item.airport, item.points)),
     };
   }, [maxDays, selectedAirports, selectedMonth]);
@@ -238,7 +245,7 @@ function AirportTrendPanel({ airports }: { airports: AirportRiskProfile[] }) {
               />
 
               {yTicks.map((tick) => {
-                const y = chart.margin.top + (1 - tick) * (chart.height - chart.margin.top - chart.margin.bottom);
+                const y = chart.margin.top + (1 - normalizeWindDisturbanceIndex(tick)) * (chart.height - chart.margin.top - chart.margin.bottom);
                 return (
                   <g key={tick}>
                     <line
@@ -250,7 +257,7 @@ function AirportTrendPanel({ airports }: { airports: AirportRiskProfile[] }) {
                       strokeDasharray="4 6"
                     />
                     <text x={chart.margin.left - 16} y={y + 5} textAnchor="end" fontSize="14" fill="#4f5a52">
-                      {tick.toFixed(2)}
+                      {formatWindDisturbanceIndex(tick)}
                     </text>
                   </g>
                 );
@@ -438,7 +445,7 @@ function SummaryBlock({ summary }: { summary: AirportSummary }) {
       <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-muted-foreground">
         <Metric label="月均" value={formatWindDisturbanceIndex(summary.average)} />
         <Metric label="峰值" value={`${formatWindDisturbanceIndex(summary.peak)} / ${summary.peakDay}日`} />
-        <Metric label="波动" value={formatWindDisturbanceIndex(summary.range)} />
+        <Metric label="波动" value={summary.range.toFixed(2)} />
       </div>
       <div className="mt-3 text-sm leading-6 text-muted-foreground">{summary.airport.typicalScenario}</div>
     </div>
@@ -501,16 +508,16 @@ function buildAiAnalysis(monthLabel: string, summaries: AirportSummary[]) {
   const sorted = [...summaries].sort((left, right) => right.average - left.average);
   const delta = Math.abs(sorted[0].average - sorted[1].average);
 
-  return `${monthLabel}，${sorted[0].airport.city}${sorted[0].airport.shortName}月均值略高于${sorted[1].airport.city}${sorted[1].airport.shortName}，差值约${formatWindDisturbanceIndex(delta)}。两条曲线均有阶段性波动，建议结合风向分布与局地地形背景进行展示性解读。`;
+  return `${monthLabel}，${sorted[0].airport.city}${sorted[0].airport.shortName}月均值略高于${sorted[1].airport.city}${sorted[1].airport.shortName}，差值约${delta.toFixed(2)}。两条曲线均有阶段性波动，建议结合风向分布与局地地形背景进行展示性解读。`;
 }
 
 function describeAverage(value: number) {
-  if (value >= 0.6) {
+  if (value > WIND_DISTURBANCE_INDEX_NORMAL_HIGH) {
     return '偏高';
   }
 
-  if (value >= 0.48) {
-    return '中等';
+  if (value >= WIND_DISTURBANCE_INDEX_NORMAL_LOW) {
+    return '正常';
   }
 
   return '较平稳';

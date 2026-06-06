@@ -1,17 +1,19 @@
+import { toWindDisturbanceIndex, WIND_DISTURBANCE_INDEX_NORMAL_HIGH, WIND_DISTURBANCE_INDEX_NORMAL_LOW } from './indexScale';
+
 export type RiskLevel = '低' | '中' | '偏高' | '高';
 
 export const getRiskLevel = (index: number): RiskLevel => {
-  const normalizedIndex = index <= 1 ? index : index / 100;
+  const displayIndex = toWindDisturbanceIndex(index);
 
-  if (normalizedIndex >= 0.78) {
+  if (displayIndex >= 2.55) {
     return '高';
   }
 
-  if (normalizedIndex >= 0.6) {
+  if (displayIndex > WIND_DISTURBANCE_INDEX_NORMAL_HIGH) {
     return '偏高';
   }
 
-  if (normalizedIndex >= 0.38) {
+  if (displayIndex >= WIND_DISTURBANCE_INDEX_NORMAL_LOW) {
     return '中';
   }
 

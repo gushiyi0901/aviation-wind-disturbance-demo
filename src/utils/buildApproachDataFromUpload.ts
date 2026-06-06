@@ -1,7 +1,16 @@
 import type { ApproachPoint } from '../data/mockApproachData';
 import type { RiskLevel } from './riskLevel';
 import type { ParsedFlightIndexRow } from './parseFlightIndexFile';
-import { formatWindDisturbanceIndex, normalizeWindDisturbanceIndex } from './indexScale';
+import {
+  formatWindDisturbanceIndex,
+  normalizeWindDisturbanceIndex,
+  toWindDisturbanceIndex,
+  windIndexDeltaFromUnit,
+  WIND_DISTURBANCE_INDEX_MAX,
+  WIND_DISTURBANCE_INDEX_MIN,
+  WIND_DISTURBANCE_INDEX_NORMAL_HIGH,
+  WIND_DISTURBANCE_INDEX_NORMAL_LOW,
+} from './indexScale';
 
 export type UploadedApproachAnalysis = {
   data: ApproachPoint[];
@@ -18,23 +27,23 @@ export function buildApproachDataFromUpload(rows: ParsedFlightIndexRow[]): Uploa
 
   // These derived fields are only for front-end presentation in the demo and do not represent a real flight model.
   const data = rows.map((row, index) => {
-    const nextIndex = rows[index + 1]?.index ?? row.index;
-    const previousIndex = rows[index - 1]?.index ?? row.index;
+    const nextIndex = normalizeWindDisturbanceIndex(rows[index + 1]?.index ?? row.index);
+    const previousIndex = normalizeWindDisturbanceIndex(rows[index - 1]?.index ?? row.index);
     const trend = nextIndex - previousIndex;
     const progress = total <= 1 ? 0 : index / (total - 1);
     const altitude = Math.max(50, Math.round(1000 - progress * 950));
-    const turbulenceIndex = normalizeWindDisturbanceIndex(row.index);
-    const displayIndex = turbulenceIndex;
+    const turbulenceIndex = toWindDisturbanceIndex(row.index);
+    const displayIndex = normalizeWindDisturbanceIndex(turbulenceIndex);
     const localVolatility = buildLocalVolatility(rows, index);
     // Demo-only interval approximation from recent local volatility; not a real statistical inference result.
-    const simulatedConfidenceWidth = clamp(0.09 + localVolatility * 1.05 + displayIndex * 0.055, 0.08, 0.24);
-    const simulatedCiLower = clamp(displayIndex - simulatedConfidenceWidth, 0, 1);
-    const simulatedCiUpper = clamp(displayIndex + simulatedConfidenceWidth, 0, 1);
-    const ciLower = row.ciLower ?? simulatedCiLower;
-    const ciUpper = row.ciUpper ?? simulatedCiUpper;
+    const simulatedConfidenceWidth = windIndexDeltaFromUnit(clamp(0.09 + localVolatility * 1.05 + displayIndex * 0.055, 0.08, 0.24));
+    const simulatedCiLower = clamp(turbulenceIndex - simulatedConfidenceWidth, WIND_DISTURBANCE_INDEX_MIN, WIND_DISTURBANCE_INDEX_MAX);
+    const simulatedCiUpper = clamp(turbulenceIndex + simulatedConfidenceWidth, WIND_DISTURBANCE_INDEX_MIN, WIND_DISTURBANCE_INDEX_MAX);
+    const ciLower = row.ciLower === undefined ? simulatedCiLower : toWindDisturbanceIndex(row.ciLower);
+    const ciUpper = row.ciUpper === undefined ? simulatedCiUpper : toWindDisturbanceIndex(row.ciUpper);
     const windSpeed = row.windSpeed ?? Math.max(8, Math.round(10 + displayIndex * 18 + localVolatility * 26 + Math.sin(index / 3.2) * 1.8));
     const windDirection = row.windDirection ?? normalizeDirection(Math.round(226 + Math.sin(index / 3.8) * 14 + Math.cos(index / 5.4) * 8 + trend * 60));
-    const riskLevel = getUploadRiskLevel(displayIndex);
+    const riskLevel = getUploadRiskLevel(turbulenceIndex);
 
     return {
       time: row.time,
@@ -97,7 +106,7 @@ function buildFactorLabel({
   turbulenceIndex: number;
   windDirection: number;
 }) {
-  if (altitude <= 240 && turbulenceIndex >= 0.6) {
+  if (altitude <= 240 && turbulenceIndex > WIND_DISTURBANCE_INDEX_NORMAL_HIGH) {
     return '低高度扰动';
   }
 
@@ -113,15 +122,15 @@ function buildFactorLabel({
 }
 
 function getUploadRiskLevel(index: number): RiskLevel {
-  if (index >= 0.8) {
+  if (index >= 2.55) {
     return '高';
   }
 
-  if (index >= 0.6) {
+  if (index > WIND_DISTURBANCE_INDEX_NORMAL_HIGH) {
     return '偏高';
   }
 
-  if (index >= 0.4) {
+  if (index >= WIND_DISTURBANCE_INDEX_NORMAL_LOW) {
     return '中';
   }
 

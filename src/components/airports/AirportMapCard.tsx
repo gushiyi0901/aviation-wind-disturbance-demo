@@ -9,7 +9,13 @@ import {
   provincePaths,
   southChinaSeaInsetFrame,
 } from '../../utils/chinaTopoMap';
-import { formatWindDisturbanceIndex, normalizeWindDisturbanceIndex } from '../../utils/indexScale';
+import {
+  formatWindDisturbanceIndex,
+  normalizeWindDisturbanceIndex,
+  WIND_DISTURBANCE_INDEX_MAX,
+  WIND_DISTURBANCE_INDEX_MIN,
+  WIND_DISTURBANCE_INDEX_NORMAL_LOW,
+} from '../../utils/indexScale';
 
 type AirportMapCardProps = {
   airports: AirportRiskProfile[];
@@ -142,9 +148,9 @@ function AirportMapCard({ airports, selectedAirportId, onSelect }: AirportMapCar
 
           <div className="pointer-events-none absolute right-4 top-1/2 z-[3] flex -translate-y-[calc(50%+107px)] items-center gap-3 rounded-[22px] border border-border/70 bg-white/82 px-3.5 py-4 shadow-soft backdrop-blur-xl">
             <div className="flex h-56 flex-col items-center justify-between text-[11px] font-semibold text-muted-foreground">
-              <span>1</span>
-              <span>0.5</span>
-              <span>0</span>
+              <span>{formatWindDisturbanceIndex(WIND_DISTURBANCE_INDEX_MAX)}</span>
+              <span>{formatWindDisturbanceIndex(WIND_DISTURBANCE_INDEX_NORMAL_LOW)}</span>
+              <span>{formatWindDisturbanceIndex(WIND_DISTURBANCE_INDEX_MIN)}</span>
             </div>
             <div className="h-56 w-3 rounded-full bg-[linear-gradient(180deg,#8e2a8a_0%,#d84a4a_10%,#f2994a_28%,#f2c94c_50%,#21b6c7_75%,#1f78b4_100%)]" />
             <div className="flex h-56 flex-col justify-between text-xs font-semibold text-muted-foreground">

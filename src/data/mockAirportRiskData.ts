@@ -1,3 +1,5 @@
+import { normalizeWindDisturbanceIndex, windIndexFromUnit } from '../utils/indexScale';
+
 export type AirportRiskLevel = '低' | '中' | '较高' | '高';
 
 export type TimeScale = 'month' | 'week' | 'day' | 'hour';
@@ -234,9 +236,9 @@ const airportSeeds: AirportSeed[] = [
     labelDx: -16,
     labelDy: -12,
     labelPlacement: 'left',
-    currentIndex: 61,
+    currentIndex: 78,
     riskLevel: '较高',
-    annualAverage: 53,
+    annualAverage: 61,
     highRiskDays: 14,
     mainRiskPeriod: '夏季、午后至傍晚',
     mainWindDirection: '南风',
@@ -265,9 +267,9 @@ const airportSeeds: AirportSeed[] = [
     labelDx: 14,
     labelDy: 10,
     labelPlacement: 'right',
-    currentIndex: 64,
+    currentIndex: 80,
     riskLevel: '较高',
-    annualAverage: 56,
+    annualAverage: 64,
     highRiskDays: 15,
     mainRiskPeriod: '夏秋、午后',
     mainWindDirection: '东南风',
@@ -296,9 +298,9 @@ const airportSeeds: AirportSeed[] = [
     labelDx: -14,
     labelDy: -12,
     labelPlacement: 'left',
-    currentIndex: 60,
+    currentIndex: 76,
     riskLevel: '较高',
-    annualAverage: 52,
+    annualAverage: 60,
     highRiskDays: 13,
     mainRiskPeriod: '春季、午后',
     mainWindDirection: '偏西风',
@@ -327,9 +329,9 @@ const airportSeeds: AirportSeed[] = [
     labelDx: 14,
     labelDy: -12,
     labelPlacement: 'right',
-    currentIndex: 63,
+    currentIndex: 78,
     riskLevel: '较高',
-    annualAverage: 55,
+    annualAverage: 62,
     highRiskDays: 16,
     mainRiskPeriod: '春夏、午后',
     mainWindDirection: '西南风',
@@ -358,9 +360,9 @@ const airportSeeds: AirportSeed[] = [
     labelDx: 14,
     labelDy: -12,
     labelPlacement: 'right',
-    currentIndex: 72,
+    currentIndex: 82,
     riskLevel: '较高',
-    annualAverage: 54,
+    annualAverage: 64,
     highRiskDays: 18,
     mainRiskPeriod: '春季、午后',
     mainWindDirection: '西南风',
@@ -420,9 +422,9 @@ const airportSeeds: AirportSeed[] = [
     labelDx: 14,
     labelDy: 10,
     labelPlacement: 'right',
-    currentIndex: 62,
+    currentIndex: 76,
     riskLevel: '较高',
-    annualAverage: 52,
+    annualAverage: 60,
     highRiskDays: 14,
     mainRiskPeriod: '春季、午后',
     mainWindDirection: '偏南风',
@@ -548,7 +550,7 @@ export function getAirportMonthlyDailyTrend(airportId: string, month: AirportTre
   const year = Number(yearPart);
   const monthNumber = Number(monthPart);
   const days = getDaysInMonth(year, monthNumber);
-  const base = ((profile?.annualAverage ?? 0.48) * 100) + ((monthNumber - 6) * 0.9);
+  const base = (profile ? normalizeWindDisturbanceIndex(profile.annualAverage) * 100 : 48) + ((monthNumber - 6) * 0.9);
   const amplitude = 4.8 + ((Array.from(airportId).reduce((sum, char) => sum + char.charCodeAt(0), 0) + monthNumber) % 5) * 0.7;
   const phase = (year - 2020) * 0.9 + monthNumber * 0.62 + (profile?.windSpeed ?? 16) * 0.08;
   const tilt = ((monthNumber % 5) - 2) * 0.55;
@@ -557,7 +559,7 @@ export function getAirportMonthlyDailyTrend(airportId: string, month: AirportTre
 }
 
 function normalizeAirportIndex(value: number) {
-  return Number((value / 100).toFixed(2));
+  return windIndexFromUnit(value / 100);
 }
 
 function getDaysInMonth(year: number, month: number) {

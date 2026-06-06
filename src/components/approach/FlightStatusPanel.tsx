@@ -2,7 +2,16 @@ import type { ReactNode } from 'react';
 import { Activity, Gauge, Navigation, Plane, SlidersHorizontal, Weight, Wind } from 'lucide-react';
 import type { TimeRange } from './approachAnalysisTypes';
 import type { ApproachPoint } from '../../data/mockApproachData';
-import { formatWindDisturbanceIndex, indexToPercent } from '../../utils/indexScale';
+import {
+  formatWindDisturbanceIndex,
+  indexToPercent,
+  normalizeWindDisturbanceIndex,
+  toWindDisturbanceIndex,
+  windIndexDeltaFromUnit,
+  windIndexFromUnit,
+  WIND_DISTURBANCE_INDEX_MAX,
+  WIND_DISTURBANCE_INDEX_MIN,
+} from '../../utils/indexScale';
 
 type FlightStatusPanelProps = {
   point: ApproachPoint;
@@ -93,7 +102,7 @@ function FlightStatusPanel({
           <div className={`h-2.5 rounded-full ${tone.barClass}`} style={{ width: `${normalizeProgressWidth(displayPoint.turbulenceIndex)}%` }} />
         </div>
         <div className="mt-2 text-xs leading-5 text-muted-foreground">
-          月均 {riskState.averageIndex.toFixed(2)} / 上2σ {riskState.upperSigmaIndex.toFixed(2)} / 置信上界 {riskState.confidenceUpper.toFixed(2)}
+          月均 {formatWindDisturbanceIndex(riskState.averageIndex)} / 上2σ {formatWindDisturbanceIndex(riskState.upperSigmaIndex)} / 置信上界 {formatWindDisturbanceIndex(riskState.confidenceUpper)}
         </div>
       </div>
 
@@ -252,7 +261,7 @@ function buildPanelConfidenceInterval(point: ApproachPoint, data: ApproachPoint[
       lower: normalizeIndexForPanel(point.ciLower),
       upper: normalizeIndexForPanel(point.ciUpper),
       center: displayIndex,
-      minHalfWidth: 0.18,
+      minHalfWidth: windIndexDeltaFromUnit(0.18),
     });
   }
 
@@ -260,11 +269,12 @@ function buildPanelConfidenceInterval(point: ApproachPoint, data: ApproachPoint[
   const recent = data.slice(start, index + 1).map((item) => normalizeIndexForPanel(item.turbulenceIndex));
   const deltas = recent.slice(1).map((value, deltaIndex) => Math.abs(value - recent[deltaIndex]));
   const volatility = deltas.length ? deltas.reduce((sum, value) => sum + value, 0) / deltas.length : 0;
-  const width = clampPanelValue((0.09 + volatility * 1.05 + displayIndex * 0.055) * 2, 0.16, 0.42);
+  const displayUnit = normalizeWindDisturbanceIndex(displayIndex);
+  const width = windIndexDeltaFromUnit(clampPanelValue((0.09 + volatility * 1.05 + displayUnit * 0.055) * 2, 0.16, 0.42));
 
   return {
-    lower: clampPanelValue(displayIndex - width, 0, 1),
-    upper: clampPanelValue(displayIndex + width, 0, 1),
+    lower: clampPanelValue(displayIndex - width, WIND_DISTURBANCE_INDEX_MIN, WIND_DISTURBANCE_INDEX_MAX),
+    upper: clampPanelValue(displayIndex + width, WIND_DISTURBANCE_INDEX_MIN, WIND_DISTURBANCE_INDEX_MAX),
   };
 }
 
@@ -283,8 +293,8 @@ function widenPanelConfidenceInterval({
   const halfWidth = Math.max((upper - lower) / 2, minHalfWidth);
 
   return {
-    lower: clampPanelValue(midpoint - halfWidth, 0, 1),
-    upper: clampPanelValue(midpoint + halfWidth, 0, 1),
+    lower: clampPanelValue(midpoint - halfWidth, WIND_DISTURBANCE_INDEX_MIN, WIND_DISTURBANCE_INDEX_MAX),
+    upper: clampPanelValue(midpoint + halfWidth, WIND_DISTURBANCE_INDEX_MIN, WIND_DISTURBANCE_INDEX_MAX),
   };
 }
 
@@ -304,8 +314,9 @@ function buildPanelAverageIndex(index: number, remainingTime: number, currentInd
   const secondaryBump = Math.exp(-((remainingTime - profile.secondaryPeakAt) ** 2) / (profile.spread * 1.25)) * profile.secondaryLift;
   const wave = Math.sin((index + profile.phase) / profile.period) * profile.wave;
   const anchored = profile.baseline + approachBump + secondaryBump + wave;
+  const currentUnit = normalizeWindDisturbanceIndex(currentIndex);
 
-  return clampPanelValue(anchored * 0.78 + currentIndex * 0.22, 0, 1);
+  return windIndexFromUnit(anchored * 0.78 + currentUnit * 0.22);
 }
 
 function buildPanelUpperSigmaIndex(averageIndex: number, index: number, remainingTime: number) {
@@ -313,15 +324,11 @@ function buildPanelUpperSigmaIndex(averageIndex: number, index: number, remainin
   const localWave = (Math.sin(index / 4.6) + 1) * 0.006;
   const standardDeviation = (0.055 + landingSensitivity + localWave) * 2;
 
-  return clampPanelValue(averageIndex + standardDeviation * 2, 0, 1);
+  return clampPanelValue(averageIndex + windIndexDeltaFromUnit(standardDeviation * 2), WIND_DISTURBANCE_INDEX_MIN, WIND_DISTURBANCE_INDEX_MAX);
 }
 
 function normalizeIndexForPanel(value: number) {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-
-  return clampPanelValue(value <= 1 ? value : value / 100, 0, 1);
+  return toWindDisturbanceIndex(value);
 }
 
 function clampPanelValue(value: number, min: number, max: number) {

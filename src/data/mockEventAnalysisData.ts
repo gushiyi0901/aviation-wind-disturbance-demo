@@ -1,3 +1,11 @@
+import {
+  windIndexDeltaFromUnit,
+  windIndexFromUnit,
+  WIND_DISTURBANCE_INDEX_MAX,
+  WIND_DISTURBANCE_INDEX_MIN,
+  WIND_DISTURBANCE_INDEX_NORMAL_HIGH,
+} from '../utils/indexScale';
+
 export type EventQuadrant = '指数事件同步偏高' | '运行韧性较强' | '非风扰主导' | '稳定运行';
 
 export type EventAttributionKey =
@@ -35,7 +43,7 @@ export type DailyEventCountPoint = {
 };
 
 export const eventScatterThresholds = {
-  averageIndex: 0.6,
+  averageIndex: WIND_DISTURBANCE_INDEX_NORMAL_HIGH,
   eventCount: 52,
 };
 
@@ -132,7 +140,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'kunming-changshui',
     name: '昆明长水',
-    averageIndex: 0.72,
+    averageIndex: windIndexFromUnit(0.82),
     eventCount: 68,
     quadrant: '指数事件同步偏高',
     highRiskPeriod: '春季午后',
@@ -150,7 +158,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'guangzhou-baiyun',
     name: '广州白云',
-    averageIndex: 0.64,
+    averageIndex: windIndexFromUnit(0.76),
     eventCount: 55,
     quadrant: '指数事件同步偏高',
     highRiskPeriod: '夏季傍晚',
@@ -168,7 +176,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'shanghai-hongqiao',
     name: '上海虹桥',
-    averageIndex: 0.55,
+    averageIndex: windIndexFromUnit(0.55),
     eventCount: 49,
     quadrant: '稳定运行',
     highRiskPeriod: '夏季傍晚',
@@ -186,7 +194,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'beijing-daxing',
     name: '北京大兴',
-    averageIndex: 0.46,
+    averageIndex: windIndexFromUnit(0.46),
     eventCount: 38,
     quadrant: '稳定运行',
     highRiskPeriod: '冬季午后',
@@ -204,7 +212,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'shanghai-pudong',
     name: '上海浦东',
-    averageIndex: 0.57,
+    averageIndex: windIndexFromUnit(0.57),
     eventCount: 63,
     quadrant: '非风扰主导',
     highRiskPeriod: '梅雨季晨间',
@@ -222,7 +230,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'qingdao-jiaodong',
     name: '青岛胶东',
-    averageIndex: 0.53,
+    averageIndex: windIndexFromUnit(0.53),
     eventCount: 54,
     quadrant: '非风扰主导',
     highRiskPeriod: '秋季午后',
@@ -240,7 +248,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'beijing-capital',
     name: '北京首都',
-    averageIndex: 0.49,
+    averageIndex: windIndexFromUnit(0.49),
     eventCount: 43,
     quadrant: '稳定运行',
     highRiskPeriod: '春季白天',
@@ -258,7 +266,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'chengdu-tianfu',
     name: '成都天府',
-    averageIndex: 0.58,
+    averageIndex: windIndexFromUnit(0.58),
     eventCount: 40,
     quadrant: '稳定运行',
     highRiskPeriod: '夏季午后',
@@ -276,7 +284,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'shenzhen-baoan',
     name: '深圳宝安',
-    averageIndex: 0.46,
+    averageIndex: windIndexFromUnit(0.46),
     eventCount: 58,
     quadrant: '非风扰主导',
     highRiskPeriod: '夏秋雷雨季',
@@ -294,7 +302,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'chongqing-jiangbei',
     name: '重庆江北',
-    averageIndex: 0.62,
+    averageIndex: windIndexFromUnit(0.78),
     eventCount: 47,
     quadrant: '运行韧性较强',
     highRiskPeriod: '秋季夜航时段',
@@ -312,7 +320,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'guiyang-longdongbao',
     name: '贵阳龙洞堡',
-    averageIndex: 0.68,
+    averageIndex: windIndexFromUnit(0.8),
     eventCount: 39,
     quadrant: '运行韧性较强',
     highRiskPeriod: '春季夜间',
@@ -330,7 +338,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
   {
     id: 'xian-xianyang',
     name: '西安咸阳',
-    averageIndex: 0.54,
+    averageIndex: windIndexFromUnit(0.54),
     eventCount: 45,
     quadrant: '稳定运行',
     highRiskPeriod: '春季午后',
@@ -363,9 +371,9 @@ export function getMonthlyEventAirportProfile(airport: EventAnalysisAirport, yea
   const yearOffset = Number(year) - 2023;
   const monthNumber = Number(month);
   const airportSeed = seedFromText(airport.id);
-  const seasonalIndex = Math.sin((monthNumber + airportSeed * 0.03) / 2.8) * 0.045 + yearOffset * 0.006;
+  const seasonalIndex = windIndexDeltaFromUnit(Math.sin((monthNumber + airportSeed * 0.03) / 2.8) * 0.045 + yearOffset * 0.006);
   const seasonalEvents = Math.cos((monthNumber + airportSeed * 0.02) / 3.1) * 5 + yearOffset * 0.7;
-  const averageIndex = clampNumber(airport.averageIndex + seasonalIndex, 0.28, 0.82);
+  const averageIndex = clampNumber(airport.averageIndex + seasonalIndex, WIND_DISTURBANCE_INDEX_MIN, WIND_DISTURBANCE_INDEX_MAX);
   const coreDailyCounts = buildCoreDailyEventCounts(airport.id, year, month);
   const eventCount = coreDailyCounts.length
     ? coreDailyCounts.reduce((sum, point) => sum + point.count, 0)
