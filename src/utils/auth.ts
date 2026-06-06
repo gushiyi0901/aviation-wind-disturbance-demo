@@ -14,7 +14,7 @@ export type MockAuthSession = {
 
 const AUTH_STORAGE_KEY = 'approach-risk-demo-auth';
 const DEMO_ACCOUNTS_STORAGE_KEY = 'demoAccounts';
-const DEFAULT_DEMO_ACCOUNTS: DemoAccount[] = [{ username: 'admin', password: 'admin123456' }];
+const DEFAULT_DEMO_ACCOUNTS: DemoAccount[] = [{ username: 'fangfang', password: '123456' }];
 
 export function getMockAuthSession(): MockAuthSession | null {
   if (typeof window === 'undefined') {
@@ -96,7 +96,7 @@ export function getDemoAccounts(): DemoAccount[] {
     }
   }
 
-  return [...storedAccounts, ...DEFAULT_DEMO_ACCOUNTS.filter((account) => !storedAccounts.some((item) => item.username === account.username))];
+  return [...DEFAULT_DEMO_ACCOUNTS, ...storedAccounts.filter((account) => !DEFAULT_DEMO_ACCOUNTS.some((item) => item.username === account.username))];
 }
 
 export function saveDemoAccount(account: DemoAccount) {

@@ -67,8 +67,7 @@ function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatte
     <section className="surface-card p-5 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="section-kicker bg-white/70">辅助象限</div>
-          <h2 className="mt-4 text-2xl font-bold text-foreground">指数 - 事件散点象限图</h2>
+          <h2 className="text-2xl font-bold text-foreground">指数 - 事件散点象限图</h2>
         </div>
         <div className="text-sm text-muted-foreground">平均风扰指数 / 降落事件数</div>
       </div>

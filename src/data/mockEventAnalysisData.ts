@@ -1,10 +1,20 @@
 export type EventQuadrant = '指数事件同步偏高' | '运行韧性较强' | '非风扰主导' | '稳定运行';
 
+export type EventAttributionKey =
+  | 'windHeadingComponent'
+  | 'windSpeedStd'
+  | 'windDirectionRate'
+  | 'windVectorVariation'
+  | 'windSpeedDiff'
+  | 'weightWindInteraction';
+
 export type EventAttribution = {
-  windSpeedChange: number;
-  windDirectionFluctuation: number;
-  lowAltitudeDisturbance: number;
-  other: number;
+  windHeadingComponent: number;
+  windSpeedStd: number;
+  windDirectionRate: number;
+  windVectorVariation: number;
+  windSpeedDiff: number;
+  weightWindInteraction: number;
 };
 
 export type EventAnalysisAirport = {
@@ -28,6 +38,50 @@ export const eventScatterThresholds = {
   averageIndex: 0.6,
   eventCount: 52,
 };
+
+export const eventAttributionFeatures: Array<{
+  key: EventAttributionKey;
+  label: string;
+  shortLabel: string;
+  color: string;
+}> = [
+  {
+    key: 'windHeadingComponent',
+    label: '原始风向与航向夹角编码 WINHEAD_SIN / WINHEAD_COS',
+    shortLabel: '夹角编码',
+    color: '#5c7c6c',
+  },
+  {
+    key: 'windSpeedStd',
+    label: '风速滑动标准差 WINSPD_std',
+    shortLabel: '风速滑动标准差',
+    color: '#b56b4a',
+  },
+  {
+    key: 'windDirectionRate',
+    label: '风向变化率 WINHEAD_DISCENT',
+    shortLabel: '风向变化率',
+    color: '#b79657',
+  },
+  {
+    key: 'windVectorVariation',
+    label: '风矢量变化强度 WIN_VEC_VARIATION',
+    shortLabel: '风矢量变化强度',
+    color: '#6f8798',
+  },
+  {
+    key: 'windSpeedDiff',
+    label: '风速差分 WINSPD_DIFF',
+    shortLabel: '风速差分',
+    color: '#8d7f69',
+  },
+  {
+    key: 'weightWindInteraction',
+    label: '重量与风场交互项',
+    shortLabel: '重量与风场交互项',
+    color: '#9b6f88',
+  },
+];
 
 export const eventQuadrantMeta: Record<
   EventQuadrant,
@@ -82,13 +136,15 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
     eventCount: 68,
     quadrant: '指数事件同步偏高',
     highRiskPeriod: '春季午后',
-    mainFactor: '风向波动',
+    mainFactor: '夹角编码',
     correlationScore: 0.82,
     attribution: {
-      windSpeedChange: 38,
-      windDirectionFluctuation: 26,
-      lowAltitudeDisturbance: 21,
-      other: 15,
+      windHeadingComponent: 27,
+      windSpeedStd: 18,
+      windDirectionRate: 16,
+      windVectorVariation: 14,
+      windSpeedDiff: 13,
+      weightWindInteraction: 12,
     },
   },
   {
@@ -98,13 +154,15 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
     eventCount: 55,
     quadrant: '指数事件同步偏高',
     highRiskPeriod: '夏季傍晚',
-    mainFactor: '风速变化',
+    mainFactor: '风速滑动标准差',
     correlationScore: 0.71,
     attribution: {
-      windSpeedChange: 35,
-      windDirectionFluctuation: 24,
-      lowAltitudeDisturbance: 19,
-      other: 22,
+      windHeadingComponent: 23,
+      windSpeedStd: 20,
+      windDirectionRate: 15,
+      windVectorVariation: 16,
+      windSpeedDiff: 14,
+      weightWindInteraction: 12,
     },
   },
   {
@@ -114,13 +172,15 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
     eventCount: 49,
     quadrant: '稳定运行',
     highRiskPeriod: '夏季傍晚',
-    mainFactor: '风向波动',
+    mainFactor: '夹角编码',
     correlationScore: 0.52,
     attribution: {
-      windSpeedChange: 24,
-      windDirectionFluctuation: 31,
-      lowAltitudeDisturbance: 18,
-      other: 27,
+      windHeadingComponent: 26,
+      windSpeedStd: 17,
+      windDirectionRate: 16,
+      windVectorVariation: 15,
+      windSpeedDiff: 13,
+      weightWindInteraction: 13,
     },
   },
   {
@@ -130,13 +190,15 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
     eventCount: 38,
     quadrant: '稳定运行',
     highRiskPeriod: '冬季午后',
-    mainFactor: '风速变化',
+    mainFactor: '风速滑动标准差',
     correlationScore: 0.42,
     attribution: {
-      windSpeedChange: 33,
-      windDirectionFluctuation: 22,
-      lowAltitudeDisturbance: 17,
-      other: 28,
+      windHeadingComponent: 24,
+      windSpeedStd: 19,
+      windDirectionRate: 15,
+      windVectorVariation: 15,
+      windSpeedDiff: 14,
+      weightWindInteraction: 13,
     },
   },
   {
@@ -146,13 +208,15 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
     eventCount: 63,
     quadrant: '非风扰主导',
     highRiskPeriod: '梅雨季晨间',
-    mainFactor: '其他因素',
+    mainFactor: '风向变化率',
     correlationScore: 0.48,
     attribution: {
-      windSpeedChange: 22,
-      windDirectionFluctuation: 18,
-      lowAltitudeDisturbance: 17,
-      other: 43,
+      windHeadingComponent: 22,
+      windSpeedStd: 17,
+      windDirectionRate: 19,
+      windVectorVariation: 16,
+      windSpeedDiff: 13,
+      weightWindInteraction: 13,
     },
   },
   {
@@ -162,13 +226,15 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
     eventCount: 54,
     quadrant: '非风扰主导',
     highRiskPeriod: '秋季午后',
-    mainFactor: '其他因素',
+    mainFactor: '风矢量变化强度',
     correlationScore: 0.45,
     attribution: {
-      windSpeedChange: 24,
-      windDirectionFluctuation: 16,
-      lowAltitudeDisturbance: 18,
-      other: 42,
+      windHeadingComponent: 21,
+      windSpeedStd: 17,
+      windDirectionRate: 18,
+      windVectorVariation: 20,
+      windSpeedDiff: 12,
+      weightWindInteraction: 12,
     },
   },
   {
@@ -178,13 +244,15 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
     eventCount: 43,
     quadrant: '稳定运行',
     highRiskPeriod: '春季白天',
-    mainFactor: '风速变化',
+    mainFactor: '风速差分',
     correlationScore: 0.39,
     attribution: {
-      windSpeedChange: 29,
-      windDirectionFluctuation: 21,
-      lowAltitudeDisturbance: 18,
-      other: 32,
+      windHeadingComponent: 23,
+      windSpeedStd: 18,
+      windDirectionRate: 15,
+      windVectorVariation: 15,
+      windSpeedDiff: 17,
+      weightWindInteraction: 12,
     },
   },
   {
@@ -194,13 +262,15 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
     eventCount: 40,
     quadrant: '稳定运行',
     highRiskPeriod: '夏季午后',
-    mainFactor: '风向波动',
+    mainFactor: '风向变化率',
     correlationScore: 0.43,
     attribution: {
-      windSpeedChange: 23,
-      windDirectionFluctuation: 33,
-      lowAltitudeDisturbance: 20,
-      other: 24,
+      windHeadingComponent: 25,
+      windSpeedStd: 18,
+      windDirectionRate: 17,
+      windVectorVariation: 16,
+      windSpeedDiff: 12,
+      weightWindInteraction: 12,
     },
   },
   {
@@ -210,13 +280,15 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
     eventCount: 58,
     quadrant: '非风扰主导',
     highRiskPeriod: '夏秋雷雨季',
-    mainFactor: '其他因素',
+    mainFactor: '重量与风场交互项',
     correlationScore: 0.36,
     attribution: {
-      windSpeedChange: 18,
-      windDirectionFluctuation: 19,
-      lowAltitudeDisturbance: 16,
-      other: 47,
+      windHeadingComponent: 20,
+      windSpeedStd: 18,
+      windDirectionRate: 16,
+      windVectorVariation: 15,
+      windSpeedDiff: 13,
+      weightWindInteraction: 18,
     },
   },
   {
@@ -226,13 +298,15 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
     eventCount: 47,
     quadrant: '运行韧性较强',
     highRiskPeriod: '秋季夜航时段',
-    mainFactor: '低高度扰动',
+    mainFactor: '风矢量变化强度',
     correlationScore: 0.67,
     attribution: {
-      windSpeedChange: 26,
-      windDirectionFluctuation: 21,
-      lowAltitudeDisturbance: 34,
-      other: 19,
+      windHeadingComponent: 22,
+      windSpeedStd: 17,
+      windDirectionRate: 16,
+      windVectorVariation: 21,
+      windSpeedDiff: 12,
+      weightWindInteraction: 12,
     },
   },
   {
@@ -242,13 +316,15 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
     eventCount: 39,
     quadrant: '运行韧性较强',
     highRiskPeriod: '春季夜间',
-    mainFactor: '风向波动',
+    mainFactor: '夹角编码',
     correlationScore: 0.69,
     attribution: {
-      windSpeedChange: 21,
-      windDirectionFluctuation: 39,
-      lowAltitudeDisturbance: 24,
-      other: 16,
+      windHeadingComponent: 28,
+      windSpeedStd: 16,
+      windDirectionRate: 17,
+      windVectorVariation: 15,
+      windSpeedDiff: 12,
+      weightWindInteraction: 12,
     },
   },
   {
@@ -258,13 +334,15 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
     eventCount: 45,
     quadrant: '稳定运行',
     highRiskPeriod: '春季午后',
-    mainFactor: '风速变化',
+    mainFactor: '风速滑动标准差',
     correlationScore: 0.41,
     attribution: {
-      windSpeedChange: 31,
-      windDirectionFluctuation: 20,
-      lowAltitudeDisturbance: 18,
-      other: 31,
+      windHeadingComponent: 23,
+      windSpeedStd: 20,
+      windDirectionRate: 16,
+      windVectorVariation: 15,
+      windSpeedDiff: 14,
+      weightWindInteraction: 12,
     },
   },
 ];
@@ -293,6 +371,7 @@ export function getMonthlyEventAirportProfile(airport: EventAnalysisAirport, yea
     ? coreDailyCounts.reduce((sum, point) => sum + point.count, 0)
     : Math.max(12, Math.round(airport.eventCount + seasonalEvents));
   const correlationScore = clampNumber(airport.correlationScore + Math.sin((monthNumber + airportSeed) / 4) * 0.035, 0.25, 0.88);
+  const attribution = buildMonthlyAttribution(airport.attribution, monthNumber, airportSeed);
 
   return {
     ...airport,
@@ -300,7 +379,8 @@ export function getMonthlyEventAirportProfile(airport: EventAnalysisAirport, yea
     eventCount,
     correlationScore: Number(correlationScore.toFixed(2)),
     quadrant: resolveEventQuadrant(averageIndex, eventCount),
-    attribution: buildMonthlyAttribution(airport.attribution, monthNumber, airportSeed),
+    mainFactor: resolveAttributionMainFactor(attribution),
+    attribution,
   };
 }
 
@@ -389,18 +469,29 @@ function buildCoreDailyCount(profile: 'steady' | 'smallPeaks' | 'variableLow', d
 }
 
 function buildMonthlyAttribution(attribution: EventAttribution, month: number, seed: number): EventAttribution {
-  const windSpeedChange = attribution.windSpeedChange + Math.round(Math.sin((month + seed) / 4) * 4);
-  const windDirectionFluctuation = attribution.windDirectionFluctuation + Math.round(Math.cos((month + seed) / 5) * 4);
-  const lowAltitudeDisturbance = attribution.lowAltitudeDisturbance + Math.round(Math.sin((month + seed) / 3.5) * 3);
-  const other = Math.max(8, 100 - windSpeedChange - windDirectionFluctuation - lowAltitudeDisturbance);
-  const total = windSpeedChange + windDirectionFluctuation + lowAltitudeDisturbance + other;
+  const adjusted = eventAttributionFeatures.map((feature, index) => ({
+    key: feature.key,
+    value: Math.max(6, attribution[feature.key] + Math.round(Math.sin((month + seed * 0.03 + index * 1.7) / 3.4) * 3)),
+  }));
+  const total = adjusted.reduce((sum, item) => sum + item.value, 0);
+  const normalized = adjusted.map((item) => ({
+    key: item.key,
+    value: Math.round((item.value / total) * 100),
+  }));
+  const roundedTotal = normalized.reduce((sum, item) => sum + item.value, 0);
+  normalized[0].value += 100 - roundedTotal;
 
-  return {
-    windSpeedChange: Math.round((windSpeedChange / total) * 100),
-    windDirectionFluctuation: Math.round((windDirectionFluctuation / total) * 100),
-    lowAltitudeDisturbance: Math.round((lowAltitudeDisturbance / total) * 100),
-    other: Math.max(0, 100 - Math.round((windSpeedChange / total) * 100) - Math.round((windDirectionFluctuation / total) * 100) - Math.round((lowAltitudeDisturbance / total) * 100)),
-  };
+  return normalized.reduce(
+    (result, item) => ({
+      ...result,
+      [item.key]: item.value,
+    }),
+    {} as EventAttribution,
+  );
+}
+
+function resolveAttributionMainFactor(attribution: EventAttribution) {
+  return eventAttributionFeatures.reduce((bestFeature, feature) => (attribution[feature.key] > attribution[bestFeature.key] ? feature : bestFeature)).shortLabel;
 }
 
 function resolveEventQuadrant(averageIndex: number, eventCount: number): EventQuadrant {

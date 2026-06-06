@@ -1,16 +1,16 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, LogOut } from 'lucide-react';
+import { ArrowLeft, ChevronDown, LogOut } from 'lucide-react';
 import EventDailyTimeline from '../components/event-analysis/EventDailyTimeline';
 import EventScatterPlot from '../components/event-analysis/EventScatterPlot';
 import EventSummaryPanel from '../components/event-analysis/EventSummaryPanel';
 import {
   defaultEventAirportId,
   eventAnalysisAirports,
-  eventQuadrantMeta,
   getDailyEventCounts,
   getMonthlyEventAirportProfile,
   getMonthlyEventAirportProfiles,
 } from '../data/mockEventAnalysisData';
+import { formatWindDisturbanceIndex } from '../utils/indexScale';
 
 type EventAnalysisPageProps = {
   onLogout: () => void;
@@ -32,7 +32,11 @@ function EventAnalysisPage({ onLogout }: EventAnalysisPageProps) {
     [selectedBaseAirport, selectedMonth, selectedYear],
   );
   const dailyEvents = useMemo(() => getDailyEventCounts(selectedBaseAirport, selectedYear, selectedMonth), [selectedBaseAirport, selectedMonth, selectedYear]);
-  const monthLabel = `${selectedYear}年${Number(selectedMonth)}月`;
+  const previousPeriod = useMemo(() => getPreviousPeriod(selectedYear, selectedMonth), [selectedMonth, selectedYear]);
+  const previousMonthAirport = useMemo(
+    () => getMonthlyEventAirportProfile(selectedBaseAirport, previousPeriod.year, previousPeriod.month),
+    [previousPeriod.month, previousPeriod.year, selectedBaseAirport],
+  );
 
   return (
     <div className="min-h-screen px-4 pb-10 pt-4 sm:px-6 lg:px-8">
@@ -58,9 +62,6 @@ function EventAnalysisPage({ onLogout }: EventAnalysisPageProps) {
       <main className="mx-auto mt-8 max-w-[1680px]">
         <section className="surface-card px-6 py-7 sm:px-8">
           <h1 className="text-3xl font-bold leading-tight sm:text-4xl lg:text-[3.15rem]">运行事件关联与归因分析</h1>
-          <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-            面向单机场、单月份观察风扰指数与降落事件的时序关系，并提供归因结构辅助解读
-          </p>
         </section>
 
         <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(420px,0.4fr)_minmax(0,0.6fr)]">
@@ -79,10 +80,7 @@ function EventAnalysisPage({ onLogout }: EventAnalysisPageProps) {
 
         <section className="mt-6">
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-border/70 bg-white/60 px-5 py-4">
-            <div>
-              <div className="section-kicker bg-white/70">辅助分析</div>
-              <div className="mt-2 text-sm text-muted-foreground">辅助指标与指数-事件象限图默认收起，展开后用于补充观察。</div>
-            </div>
+            <div className="section-kicker bg-white/70">辅助分析</div>
             <button type="button" onClick={() => setIsAuxiliaryOpen((value) => !value)} className="action-secondary">
               {isAuxiliaryOpen ? '收起辅助分析' : '展开辅助分析'}
             </button>
@@ -90,7 +88,13 @@ function EventAnalysisPage({ onLogout }: EventAnalysisPageProps) {
 
           {isAuxiliaryOpen && (
             <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(320px,0.34fr)_minmax(0,0.66fr)]">
-              <AuxiliaryMetrics airport={selectedAirport} monthLabel={monthLabel} />
+              <AuxiliaryMetrics
+                airports={eventAnalysisAirports}
+                airport={previousMonthAirport}
+                selectedAirportId={selectedAirportId}
+                monthLabel={previousPeriod.label}
+                onSelect={setSelectedAirportId}
+              />
               <EventScatterPlot airports={monthlyAirports} selectedAirportId={selectedAirportId} onSelect={setSelectedAirportId} />
             </div>
           )}
@@ -106,22 +110,56 @@ function EventAnalysisPage({ onLogout }: EventAnalysisPageProps) {
   );
 }
 
-function AuxiliaryMetrics({ airport, monthLabel }: { airport: ReturnType<typeof getMonthlyEventAirportProfile>; monthLabel: string }) {
-  const quadrant = eventQuadrantMeta[airport.quadrant];
+function AuxiliaryMetrics({
+  airports,
+  airport,
+  selectedAirportId,
+  monthLabel,
+  onSelect,
+}: {
+  airports: typeof eventAnalysisAirports;
+  airport: ReturnType<typeof getMonthlyEventAirportProfile>;
+  selectedAirportId: string;
+  monthLabel: string;
+  onSelect: (id: string) => void;
+}) {
+  const primaryAirportOrder = ['shanghai-hongqiao', 'beijing-daxing', 'chengdu-tianfu'];
+  const orderedAirports = [...airports].sort((left, right) => {
+    const leftIndex = primaryAirportOrder.indexOf(left.id);
+    const rightIndex = primaryAirportOrder.indexOf(right.id);
+
+    if (leftIndex === -1 && rightIndex === -1) return 0;
+    if (leftIndex === -1) return 1;
+    if (rightIndex === -1) return -1;
+    return leftIndex - rightIndex;
+  });
 
   return (
     <section className="surface-card p-5 sm:p-6">
-      <div className="section-kicker bg-white/70">辅助分析指标</div>
-      <h2 className="mt-4 text-2xl font-bold text-foreground">{monthLabel}辅助观察</h2>
+      <div>
+        <label className="block h-4 text-xs font-semibold leading-4 tracking-[0.12em] text-muted-foreground">机场选择</label>
+        <div className="relative mt-2">
+          <select
+            value={selectedAirportId}
+            onChange={(event) => onSelect(event.target.value)}
+            className="h-12 w-full appearance-none rounded-2xl border border-border/80 bg-white/85 px-4 pr-11 text-sm font-semibold text-foreground shadow-sm outline-none transition focus:border-accent/30"
+          >
+            {orderedAirports.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+          <ChevronDown size={16} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        </div>
+      </div>
+
+      <h2 className="mt-5 text-2xl font-bold leading-tight text-foreground">{monthLabel}{airport.name}指数 - 事件指标</h2>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-        <MetricTile label="高风险时段" value={airport.highRiskPeriod} />
-        <MetricTile label="主要扰动来源" value={airport.mainFactor} />
+        <MetricTile label="平均风扰指数" value={formatWindDisturbanceIndex(airport.averageIndex)} />
+        <MetricTile label="降落事件数" value={String(airport.eventCount)} />
         <MetricTile label="相关性评分" value={airport.correlationScore.toFixed(2)} />
-        <div className="rounded-[20px] border border-border/70 bg-white/85 p-3.5">
-          <div className="text-xs text-muted-foreground">象限类别</div>
-          <div className={`mt-2 inline-flex rounded-full border px-3 py-1.5 text-xs font-semibold ${quadrant.pillClass}`}>{airport.quadrant}</div>
-        </div>
       </div>
     </section>
   );
@@ -134,6 +172,18 @@ function MetricTile({ label, value }: { label: string; value: string }) {
       <div className="mt-2 text-sm font-semibold leading-6 text-foreground">{value}</div>
     </div>
   );
+}
+
+function getPreviousPeriod(year: string, month: string) {
+  const selectedDate = new Date(Number(year), Number(month) - 2, 1);
+  const previousYear = String(selectedDate.getFullYear());
+  const previousMonth = String(selectedDate.getMonth() + 1).padStart(2, '0');
+
+  return {
+    year: previousYear,
+    month: previousMonth,
+    label: `上月${previousYear}年${selectedDate.getMonth() + 1}月`,
+  };
 }
 
 export default EventAnalysisPage;

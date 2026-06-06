@@ -103,7 +103,7 @@ function FlightStatusPanel({
           icon={<Navigation size={15} className="text-accent" />}
           label={
             <span className="leading-tight">
-              风向（与机头夹角）
+              原始风向与航向夹角
               <span className="mt-0.5 block text-[10px] uppercase tracking-[0.08em]">Wind-Heading Angle</span>
             </span>
           }
