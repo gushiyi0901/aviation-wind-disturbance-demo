@@ -54,7 +54,7 @@ function AirportRiskPage({ onLogout }: AirportRiskPageProps) {
 
         <section className="mt-6 rounded-[28px] border border-amber-300/70 bg-amber-50/90 px-5 py-5 shadow-sm">
           <p className="text-sm leading-7 text-slate-700 sm:text-[15px]">
-            本页面为科研成果演示 Demo，结果仅用于项目交流、方法展示与可视化说明，不作为实际飞行安全决策依据。
+            本页面为科研成果演示Demo
           </p>
         </section>
       </main>

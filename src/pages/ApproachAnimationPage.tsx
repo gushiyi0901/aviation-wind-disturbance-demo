@@ -205,7 +205,7 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
 
         <section className="mt-6 rounded-[28px] border border-amber-300/70 bg-amber-50/90 px-5 py-5 shadow-sm">
           <p className="text-sm leading-7 text-slate-700 sm:text-[15px]">
-            当前页面为科研展示 Demo。示例数据、上传后派生的风向风速与95%置信区间均用于前端演示，不作为实际飞行安全决策依据。
+            本页面为科研成果演示Demo
           </p>
         </section>
       </main>
