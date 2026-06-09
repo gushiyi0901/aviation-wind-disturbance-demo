@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 64" role="img" aria-labelledby="title desc">
+  <title id="title">KeyLab</title>
+  <desc id="desc">实验室字标</desc>
+  <rect x="2" y="2" width="176" height="60" rx="14" fill="#fffaf6" stroke="#d9c8ba" stroke-width="2"/>
+  <path d="M24 45V19h7.2v11.1L41.1 19h8.6L38.6 31.3 50.3 45h-9L31.2 32.7V45H24Z" fill="#a4573d"/>
+  <path d="M54.2 45V19h7.1v20.2h14.1V45H54.2Z" fill="#2f6f80"/>
+  <path d="M78.6 45 88.7 19h7.8l10.1 26h-7.5l-1.7-5H87.6l-1.7 5h-7.3Zm11.2-10.6h5.5l-2.7-8.1-2.8 8.1Z" fill="#a4573d"/>
+  <path d="M110.4 45V19h12.1c3.2 0 5.7.7 7.4 2.1 1.8 1.4 2.7 3.4 2.7 5.9 0 1.4-.3 2.6-.9 3.6-.6 1-1.5 1.8-2.6 2.3 1.5.5 2.7 1.3 3.5 2.4.8 1.1 1.2 2.5 1.2 4 0 2.8-.9 4.9-2.7 6.4-1.8 1.5-4.3 2.2-7.7 2.2h-13Zm7.1-15.4h4.9c1.2 0 2.1-.2 2.7-.7.6-.5.9-1.2.9-2.1s-.3-1.6-.9-2.1c-.6-.4-1.5-.7-2.8-.7h-4.8v5.6Zm0 10.2h5.5c1.3 0 2.3-.2 2.9-.7.7-.5 1-1.2 1-2.2 0-1-.3-1.7-1-2.2-.7-.5-1.7-.7-3-.7h-5.4v5.8Z" fill="#2f6f80"/>
+  <path d="M143.5 19h2.8v26h-2.8z" fill="#d9c8ba"/>
+  <circle cx="157" cy="25" r="5" fill="#a4573d"/>
+  <circle cx="157" cy="39" r="5" fill="#2f6f80"/>
+  <path d="M157 30v4" stroke="#d9c8ba" stroke-width="2" stroke-linecap="round"/>
+</svg>

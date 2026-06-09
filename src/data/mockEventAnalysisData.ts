@@ -6,7 +6,7 @@ import {
   WIND_DISTURBANCE_INDEX_NORMAL_HIGH,
 } from '../utils/indexScale';
 
-export type EventQuadrant = '指数事件同步偏高' | '运行韧性较强' | '非风扰主导' | '稳定运行';
+export type EventQuadrant = '指数风险同步偏高' | '运行韧性较强' | '非风扰主导' | '稳定运行';
 
 export type EventAttributionKey =
   | 'windHeadingComponent'
@@ -55,31 +55,31 @@ export const eventAttributionFeatures: Array<{
 }> = [
   {
     key: 'windHeadingComponent',
-    label: '原始风向与航向夹角编码 WINHEAD_SIN / WINHEAD_COS',
+    label: '原始风向与航向夹角编码',
     shortLabel: '夹角编码',
     color: '#5c7c6c',
   },
   {
     key: 'windSpeedStd',
-    label: '风速滑动标准差 WINSPD_std',
+    label: '风速滑动标准差',
     shortLabel: '风速滑动标准差',
     color: '#b56b4a',
   },
   {
     key: 'windDirectionRate',
-    label: '风向变化率 WINHEAD_DISCENT',
+    label: '风向变化率',
     shortLabel: '风向变化率',
     color: '#b79657',
   },
   {
     key: 'windVectorVariation',
-    label: '风矢量变化强度 WIN_VEC_VARIATION',
+    label: '风矢量变化强度',
     shortLabel: '风矢量变化强度',
     color: '#6f8798',
   },
   {
     key: 'windSpeedDiff',
-    label: '风速差分 WINSPD_DIFF',
+    label: '风速差分',
     shortLabel: '风速差分',
     color: '#8d7f69',
   },
@@ -102,16 +102,16 @@ export const eventQuadrantMeta: Record<
     accentBar: string;
   }
 > = {
-  指数事件同步偏高: {
-    shortLabel: '高指数 / 高事件',
-    description: '指数与事件同步偏高',
+  指数风险同步偏高: {
+    shortLabel: '高指数 / 高风险',
+    description: '指数与风险同步偏高',
     pillClass: 'border-[#c78667]/35 bg-[#f6e3d8] text-[#8d4a47]',
     dotColor: '#b56b4a',
     glowColor: 'rgba(181,107,74,0.2)',
     accentBar: 'bg-[#b56b4a]',
   },
   运行韧性较强: {
-    shortLabel: '高指数 / 低事件',
+    shortLabel: '高指数 / 低风险',
     description: '运行韧性较强',
     pillClass: 'border-[#7a907f]/35 bg-[#e5efe7] text-[#547465]',
     dotColor: '#5c7c6c',
@@ -119,7 +119,7 @@ export const eventQuadrantMeta: Record<
     accentBar: 'bg-[#5c7c6c]',
   },
   非风扰主导: {
-    shortLabel: '低指数 / 高事件',
+    shortLabel: '低指数 / 高风险',
     description: '非风扰主导',
     pillClass: 'border-[#d1b57a]/40 bg-[#f7edd8] text-[#9a7b39]',
     dotColor: '#b79657',
@@ -127,7 +127,7 @@ export const eventQuadrantMeta: Record<
     accentBar: 'bg-[#b79657]',
   },
   稳定运行: {
-    shortLabel: '低指数 / 低事件',
+    shortLabel: '低指数 / 低风险',
     description: '稳定运行',
     pillClass: 'border-[#bca98f]/40 bg-[#f5ede3] text-[#7f725f]',
     dotColor: '#bca98f',
@@ -142,7 +142,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
     name: '昆明长水',
     averageIndex: windIndexFromUnit(0.82),
     eventCount: 68,
-    quadrant: '指数事件同步偏高',
+    quadrant: '指数风险同步偏高',
     highRiskPeriod: '春季午后',
     mainFactor: '夹角编码',
     correlationScore: 0.82,
@@ -160,7 +160,7 @@ export const eventAnalysisAirports: EventAnalysisAirport[] = [
     name: '广州白云',
     averageIndex: windIndexFromUnit(0.76),
     eventCount: 55,
-    quadrant: '指数事件同步偏高',
+    quadrant: '指数风险同步偏高',
     highRiskPeriod: '夏季傍晚',
     mainFactor: '风速滑动标准差',
     correlationScore: 0.71,
@@ -504,7 +504,7 @@ function resolveAttributionMainFactor(attribution: EventAttribution) {
 
 function resolveEventQuadrant(averageIndex: number, eventCount: number): EventQuadrant {
   if (averageIndex >= eventScatterThresholds.averageIndex && eventCount >= eventScatterThresholds.eventCount) {
-    return '指数事件同步偏高';
+    return '指数风险同步偏高';
   }
 
   if (averageIndex >= eventScatterThresholds.averageIndex) {

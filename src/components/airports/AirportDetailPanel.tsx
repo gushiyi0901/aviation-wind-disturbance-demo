@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { ChevronDown, Compass, MapPinned, Waves } from 'lucide-react';
+import { ChevronDown, Compass, Waves } from 'lucide-react';
 import { airportTrendMonthNumbers, airportTrendYears, type AirportRiskProfile } from '../../data/mockAirportRiskData';
 import { airportRiskMeta } from '../../utils/airportRiskMeta';
 import { formatWindDisturbanceIndex, indexToPercent, WIND_DISTURBANCE_INDEX_MAX, WIND_DISTURBANCE_INDEX_MIN } from '../../utils/indexScale';
@@ -20,10 +20,8 @@ function AirportDetailPanel({ airports, airport, selectedAirportId, onSelect }: 
   const displayPeriod = `${selectedYear}年${Number(selectedMonthNumber)}月`;
 
   return (
-    <aside className="surface-card flex h-full flex-col p-5 sm:p-6">
-      <div className="section-kicker bg-white/70">机场详情</div>
-
-      <div className="mt-5">
+    <aside className="surface-card flex h-full flex-col p-4">
+      <div>
         <label className="text-xs font-semibold tracking-[0.12em] text-muted-foreground">机场选择</label>
         <div className="relative mt-2">
           <select
@@ -41,7 +39,7 @@ function AirportDetailPanel({ airports, airport, selectedAirportId, onSelect }: 
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="mt-3 grid grid-cols-2 gap-3">
         <label className="block">
           <span className="text-xs font-semibold tracking-[0.12em] text-muted-foreground">年份</span>
           <select
@@ -73,18 +71,14 @@ function AirportDetailPanel({ airports, airport, selectedAirportId, onSelect }: 
         </label>
       </div>
 
-      <div className="mt-5 flex items-start justify-between gap-4">
+      <div className="mt-3 flex items-start justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-foreground">{airport.name}</h2>
-          <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 text-sm text-muted-foreground">
-            <MapPinned size={14} className="text-accent" />
-            {airport.type}
-          </div>
         </div>
         <span className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${tone.pillClass}`}>{airport.riskLevel}</span>
       </div>
 
-      <div className="mt-5 rounded-[26px] border border-border/75 bg-white/85 p-4">
+      <div className="mt-3 rounded-[24px] border border-border/75 bg-white/85 p-3.5">
         <div className="flex items-center justify-between gap-4">
           <div>
             <div className="text-sm text-muted-foreground">{displayPeriod}平均风扰指数</div>
@@ -96,12 +90,12 @@ function AirportDetailPanel({ airports, airport, selectedAirportId, onSelect }: 
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="mt-3 grid grid-cols-2 gap-3">
         <MetricTile label="主导风向" value={airport.mainWindDirection} icon={<Compass size={15} />} />
-        <MetricTile label="风速参考" value={`${airport.windSpeed} kt`} icon={<Waves size={15} />} />
+        <MetricTile label="参考" value={`${airport.windSpeed} kt`} icon={<Waves size={15} />} />
       </div>
 
-      <div className="mt-4 rounded-[24px] border border-border/75 bg-white/85 p-4">
+      <div className="mt-2.5 rounded-[22px] border border-border/75 bg-white/85 p-3">
         <div className="text-sm font-semibold text-foreground">主要扰动来源</div>
         <div className="mt-3 flex flex-wrap gap-2">
           {airport.mainFactors.map((factor) => (
@@ -112,12 +106,11 @@ function AirportDetailPanel({ airports, airport, selectedAirportId, onSelect }: 
         </div>
       </div>
 
-      <div className="mt-4 rounded-[24px] border border-border/75 bg-white/85 p-4">
+      <div className="mt-2.5 rounded-[22px] border border-border/75 bg-white/85 p-3">
         <div className="flex items-center justify-between gap-3">
-          <div className="text-sm font-semibold text-foreground">置信区间</div>
-          <span className="rounded-full bg-background/90 px-3 py-1 text-[11px] text-muted-foreground">月均估计区间</span>
+          <div className="text-sm font-semibold text-foreground">95%置信区间</div>
         </div>
-        <div className="mt-3 grid grid-cols-3 gap-3">
+        <div className="mt-2.5 grid grid-cols-3 gap-2.5">
           <MetricStack label="下界" value={predictionInterval.lower} />
           <MetricStack label="中心" value={airport.currentIndex} />
           <MetricStack label="上界" value={predictionInterval.upper} />

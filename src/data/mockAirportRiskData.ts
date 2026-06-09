@@ -82,7 +82,7 @@ export const airportRiskDisplayPeriod = '2026年5月';
 
 export const defaultAirportId = 'shanghai-hongqiao';
 
-export const airportTrendYears = Array.from({ length: 7 }, (_, index) => String(2020 + index));
+export const airportTrendYears = Array.from({ length: 3 }, (_, index) => String(2024 + index));
 
 export const airportTrendMonthNumbers = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, '0'));
 

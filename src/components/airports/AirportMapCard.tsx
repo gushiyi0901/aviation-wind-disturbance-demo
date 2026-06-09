@@ -42,19 +42,18 @@ function AirportMapCard({ airports, selectedAirportId, onSelect }: AirportMapCar
   const hoveredAirport = airports.find((airport) => airport.id === hoveredAirportId) ?? null;
 
   return (
-    <section className="surface-card flex h-full min-w-0 flex-col overflow-hidden p-5 sm:p-6">
+    <section className="surface-card flex min-w-0 flex-col overflow-hidden p-3.5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <div className="section-kicker bg-white/70">空间分布图</div>
-          <h2 className="mt-4 text-2xl font-bold text-foreground">国内机场月平均风扰分布</h2>
+          <h2 className="text-2xl font-bold text-foreground">国内机场月平均风扰分布</h2>
         </div>
       </div>
 
-      <div className="relative mt-6 flex-1 overflow-hidden rounded-[30px] border border-border/75 bg-[#fbfaf6] p-3 sm:p-5">
-        <div className="relative mx-auto aspect-[25/19] min-h-[520px] w-full max-w-[1120px] lg:min-h-[660px]">
+      <div className="relative mt-2 overflow-hidden rounded-[30px] border border-border/75 bg-[#fbfaf6] p-0.5">
+        <div className="relative mx-auto aspect-[25/15] min-h-[360px] w-full max-w-[1120px] lg:min-h-[400px]">
           <svg
             viewBox={`0 0 ${chinaMapViewBox.width} ${chinaMapViewBox.height}`}
-            className="absolute inset-0 h-full w-full -translate-x-[68px]"
+            className="absolute inset-0 h-full w-full -translate-x-[76px] -translate-y-2 scale-[1.14]"
             preserveAspectRatio="xMidYMid meet"
             aria-label="中国机场月平均风扰指数矢量地图"
           >

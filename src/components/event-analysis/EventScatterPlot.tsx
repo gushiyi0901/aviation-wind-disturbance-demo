@@ -67,9 +67,9 @@ function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatte
     <section className="surface-card p-5 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">指数 - 事件散点象限图</h2>
+          <h2 className="text-2xl font-bold text-foreground">指数 - 风险散点象限图</h2>
         </div>
-        <div className="text-sm text-muted-foreground">平均风扰指数 / 降落事件数</div>
+        <div className="text-sm text-muted-foreground">平均风扰指数 / 降落风险数</div>
       </div>
 
       <div className="relative mt-6 rounded-[30px] border border-border/75 bg-white/85 p-4 sm:p-5">
@@ -79,7 +79,7 @@ function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatte
             return (
               <g key={tick}>
                 <line x1={MARGIN.left} x2={WIDTH - MARGIN.right} y1={y} y2={y} stroke="#d8cdbb" strokeDasharray="4 6" />
-                <text x={MARGIN.left - 16} y={y + 4} textAnchor="end" fontSize="12" fill="#6d756e">
+                <text x={MARGIN.left - 16} y={y + 5} textAnchor="end" fontSize="15" fontWeight="650" fill="#3f4d43">
                   {tick}
                 </text>
               </g>
@@ -91,7 +91,7 @@ function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatte
             return (
               <g key={tick}>
                 <line x1={x} x2={x} y1={MARGIN.top} y2={HEIGHT - MARGIN.bottom} stroke="#ece2d4" />
-                <text x={x} y={HEIGHT - MARGIN.bottom + 26} textAnchor="middle" fontSize="12" fill="#6d756e">
+                <text x={x} y={HEIGHT - MARGIN.bottom + 27} textAnchor="middle" fontSize="15" fontWeight="650" fill="#3f4d43">
                   {formatWindDisturbanceIndex(tick)}
                 </text>
               </g>
@@ -115,27 +115,28 @@ function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatte
             x={34}
             y={(MARGIN.top + HEIGHT - MARGIN.bottom) / 2}
             textAnchor="middle"
-            fontSize="13"
-            fill="#6d756e"
+            fontSize="17"
+            fontWeight="700"
+            fill="#26362d"
             transform={`rotate(-90 34 ${(MARGIN.top + HEIGHT - MARGIN.bottom) / 2})`}
           >
-            降落事件数
+            降落风险数
           </text>
-          <text x={(MARGIN.left + (WIDTH - MARGIN.right)) / 2} y={HEIGHT - 18} textAnchor="middle" fontSize="13" fill="#6d756e">
+          <text x={(MARGIN.left + (WIDTH - MARGIN.right)) / 2} y={HEIGHT - 17} textAnchor="middle" fontSize="17" fontWeight="700" fill="#26362d">
             平均风扰指数
           </text>
 
-          <text x={WIDTH - MARGIN.right - 8} y={MARGIN.top + 16} textAnchor="end" fontSize="11" fill="#8d4a47">
-            高指数 / 高事件：同步偏高
+          <text x={WIDTH - MARGIN.right - 8} y={MARGIN.top + 18} textAnchor="end" fontSize="14" fontWeight="700" fill="#8d4a47">
+            高指数 / 高风险：同步偏高
           </text>
-          <text x={MARGIN.left + 12} y={MARGIN.top + 16} fontSize="11" fill="#9a7b39">
-            低指数 / 高事件：非风扰主导
+          <text x={MARGIN.left + 12} y={MARGIN.top + 18} fontSize="14" fontWeight="700" fill="#9a7b39">
+            低指数 / 高风险：非风扰主导
           </text>
-          <text x={WIDTH - MARGIN.right - 8} y={HEIGHT - MARGIN.bottom - 12} textAnchor="end" fontSize="11" fill="#547465">
-            高指数 / 低事件：运行韧性较强
+          <text x={WIDTH - MARGIN.right - 8} y={HEIGHT - MARGIN.bottom - 14} textAnchor="end" fontSize="14" fontWeight="700" fill="#547465">
+            高指数 / 低风险：运行韧性较强
           </text>
-          <text x={MARGIN.left + 12} y={HEIGHT - MARGIN.bottom - 12} fontSize="11" fill="#7f725f">
-            低指数 / 低事件：稳定运行
+          <text x={MARGIN.left + 12} y={HEIGHT - MARGIN.bottom - 14} fontSize="14" fontWeight="700" fill="#7f725f">
+            低指数 / 低风险：稳定运行
           </text>
 
           {points.map((point) => {
@@ -180,7 +181,7 @@ function EventScatterPlot({ airports, selectedAirportId, onSelect }: EventScatte
                 <span className="font-semibold text-foreground">{formatWindDisturbanceIndex(hoveredPoint.averageIndex)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span>降落事件数</span>
+                <span>降落风险数</span>
                 <span className="font-semibold text-foreground">{hoveredPoint.eventCount}</span>
               </div>
               <div className="flex items-center justify-between">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
-import { AlertTriangle, Gauge, Navigation, RotateCcw, Wind, X } from 'lucide-react';
+import { AlertTriangle, Bot, Gauge, Navigation, RotateCcw, Wind } from 'lucide-react';
 import type { AverageDimension, TimeRange } from './approachAnalysisTypes';
 import type { ApproachPoint } from '../../data/mockApproachData';
 import {
@@ -42,7 +42,6 @@ type ChartRiskCategory = 'low' | 'medium' | 'high';
 
 type RiskSummary = {
   highestPoint: ChartPoint;
-  highestHighRiskPoint: ChartPoint | null;
   averageDelta: number;
 };
 
@@ -53,12 +52,12 @@ type RiskSegment = {
 };
 
 const CHART_WIDTH = 1120;
-const CHART_HEIGHT = 505;
-const MARGIN = { top: 30, right: 34, left: 104 };
-const PLOT_BOTTOM = 258;
-const WIND_BAND_TOP = 304;
-const WIND_BAND_HEIGHT = 80;
-const X_AXIS_LABEL_Y = 432;
+const CHART_HEIGHT = 585;
+const MARGIN = { top: 34, right: 22, left: 86 };
+const PLOT_BOTTOM = 316;
+const WIND_BAND_TOP = 380;
+const WIND_BAND_HEIGHT = 104;
+const X_AXIS_LABEL_Y = 508;
 const ANIMATION_DURATION = 3000;
 
 function ApproachChart({
@@ -133,9 +132,11 @@ function ApproachChart({
   const activeIndex = Math.min(points.length - 1, Math.max(0, Math.round(progress * (points.length - 1))));
   const scanPoint = points[activeIndex];
   const hoverPoint = hoveredIndex !== null ? points[hoveredIndex] : null;
-  const dimensionLabel = averageDimensionLabels[averageDimension];
   const highlightedTime = selectedPoint?.time ?? scanPoint?.time;
   const curveClipWidth = progress >= 1 ? CHART_WIDTH - MARGIN.left - MARGIN.right : Math.max(0, scanPoint.x - MARGIN.left);
+  const landingPoint = points.reduce((closest, point) => (point.remainingTime < closest.remainingTime ? point : closest), points[0]);
+  const detailPoint = selectedPoint ?? landingPoint;
+  const agentAnalysisItems = buildAgentAnalysisItems(points, riskSummary);
 
   const tooltipStyle: CSSProperties | undefined = hoverPoint
     ? {
@@ -158,10 +159,10 @@ function ApproachChart({
   };
 
   return (
-    <section className="surface-card p-5 sm:p-6">
+    <section className="surface-card flex h-full flex-col p-4 sm:p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">实时风扰指数对比</h2>
+          <h2 className="text-2xl font-bold text-foreground">单次航班进近降落风扰分析曲线图</h2>
         </div>
 
         <button type="button" onClick={onReplay} className="action-secondary">
@@ -170,24 +171,17 @@ function ApproachChart({
         </button>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <SummaryTile label="最高风扰指数" value={formatIndex(riskSummary.highestPoint.displayIndex)} />
-        <SummaryTile label={`高于${dimensionLabel}均`} value={formatDelta(riskSummary.averageDelta)} />
-        <SummaryTile label="曲线风险规则" value="相对月均值上2σ" />
-      </div>
-
-      <div className="mt-5 rounded-[18px] border border-border/75 bg-white/90 p-4 sm:p-5">
-        <div className="pb-4">
-          <h3 className="text-center text-lg font-semibold leading-7 text-foreground sm:text-xl">单次航班进近降落风扰分析</h3>
-          <div className="mx-auto mt-4 flex max-w-4xl flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+      <div className="mt-4 flex flex-1 flex-col rounded-[18px] border border-border/75 bg-white/90 p-3 sm:p-4">
+        <div className="pb-3">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
             <LegendItem label="样本进近曲线" color="#1f5f8b" />
             <LegendItem label="历史月均值基准" color="#8a6c37" dashed />
             <LegendItem label="月均值上2σ" color="#9a4f43" dashed />
-            <LegendItem label="置信区间带" color="#d7c5b7" thick />
+            <LegendItem label="95%置信区间带" color="#d7c5b7" thick />
           </div>
         </div>
         <div className="relative">
-          <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} className="h-[355px] w-full xl:h-[380px]">
+          <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} className="h-[470px] w-full xl:h-[520px]">
             <defs>
               <clipPath id="approach-risk-curve-clip">
                 <rect x={MARGIN.left} y={MARGIN.top - 12} width={curveClipWidth} height={PLOT_BOTTOM - MARGIN.top + 24} />
@@ -342,9 +336,9 @@ function ApproachChart({
               <div className="mt-3 space-y-2 text-sm text-muted-foreground">
                 <InfoRow label="高度" value={`${hoverPoint.altitude} ft`} />
                 <InfoRow label="样本进近曲线" value={formatIndex(hoverPoint.displayIndex)} icon={<Gauge size={14} className="text-accent" />} />
-                <InfoRow label={`历史${dimensionLabel}均值基准`} value={formatIndex(hoverPoint.averageIndex)} />
+                <InfoRow label="历史月均值基准" value={formatIndex(hoverPoint.averageIndex)} />
                 <InfoRow label="月均值上2σ" value={formatIndex(hoverPoint.upperSigmaIndex)} />
-                <InfoRow label="置信区间" value={`${formatIndex(hoverPoint.confidenceLower)} - ${formatIndex(hoverPoint.confidenceUpper)}`} />
+                <InfoRow label="95%置信区间" value={`${formatIndex(hoverPoint.confidenceLower)} - ${formatIndex(hoverPoint.confidenceUpper)}`} />
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center gap-2">
                     <AlertTriangle size={14} className="text-accent-secondary" />
@@ -362,8 +356,8 @@ function ApproachChart({
           )}
         </div>
 
-        {selectedPoint && <ConfidenceDetailTable point={selectedPoint} onClose={() => setSelectedPoint(null)} />}
-        <HighRiskNotice point={riskSummary.highestHighRiskPoint} />
+        <ConfidenceDetailTable point={detailPoint} />
+        <AgentAnalysisPanel items={agentAnalysisItems} />
       </div>
     </section>
   );
@@ -591,14 +585,9 @@ function getChartRiskCategory(displayIndex: number, confidenceUpper: number, upp
 
 function buildRiskSummary(points: ChartPoint[]): RiskSummary {
   const highestPoint = points.reduce((max, point) => (point.displayIndex > max.displayIndex ? point : max), points[0]);
-  const highRiskPoints = points.filter((point) => point.riskCategory === 'high');
-  const highestHighRiskPoint = highRiskPoints.length
-    ? highRiskPoints.reduce((max, point) => (point.displayIndex > max.displayIndex ? point : max), highRiskPoints[0])
-    : null;
 
   return {
     highestPoint,
-    highestHighRiskPoint,
     averageDelta: highestPoint.displayIndex - highestPoint.averageIndex,
   };
 }
@@ -635,11 +624,6 @@ function formatIndex(value: number) {
   return formatWindDisturbanceIndex(value);
 }
 
-function formatDelta(value: number) {
-  const prefix = value >= 0 ? '+' : '';
-  return `${prefix}${value.toFixed(2)}`;
-}
-
 function formatDeltaMagnitude(value: number) {
   return Math.max(0, value).toFixed(2);
 }
@@ -674,30 +658,6 @@ function LegendItem({
   );
 }
 
-function SummaryTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[16px] border border-border/70 bg-white/82 px-4 py-3">
-      <div className="text-xs font-semibold tracking-[0.08em] text-muted-foreground">{label}</div>
-      <div className="mt-2 text-lg font-bold leading-tight text-foreground">{value}</div>
-    </div>
-  );
-}
-
-function HighRiskNotice({ point }: { point: ChartPoint | null }) {
-  if (!point) {
-    return null;
-  }
-
-  return (
-    <div className="mt-3 rounded-[18px] border border-[#d9b7a8] bg-[#f8ebe4] px-4 py-3">
-      <div className="text-sm font-semibold text-[#8d4a47]">高风险 - 距离接地{point.remainingTime}秒</div>
-      <div className="mt-1.5 text-sm text-slate-700">
-        指数：{formatIndex(point.displayIndex)} 超月均值{formatDelta(point.displayIndex - point.averageIndex)}
-      </div>
-    </div>
-  );
-}
-
 function InfoRow({ label, value, icon }: { label: string; value: string; icon?: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">
@@ -710,27 +670,20 @@ function InfoRow({ label, value, icon }: { label: string; value: string; icon?: 
   );
 }
 
-function ConfidenceDetailTable({ point, onClose }: { point: ChartPoint; onClose: () => void }) {
+function ConfidenceDetailTable({ point }: { point: ChartPoint }) {
   const rows = [
     ['风扰指数', formatIndex(point.displayIndex)],
-    ['置信下界', formatIndex(point.confidenceLower)],
-    ['置信上界', formatIndex(point.confidenceUpper)],
+    ['95%置信区间下界', formatIndex(point.confidenceLower)],
+    ['95%置信区间上界', formatIndex(point.confidenceUpper)],
     ['区间宽度', formatDeltaMagnitude(point.confidenceUpper - point.confidenceLower)],
     ['风速', `${point.windSpeed} kt`],
     ['风向', `${point.windDirection}°`],
   ];
 
   return (
-    <div className="mt-2 rounded-[18px] border border-border/75 bg-white/92 p-3.5">
+    <div className="-mt-3 rounded-[18px] border border-border/75 bg-white/92 p-3.5">
       <div className="flex items-center justify-between gap-4">
-        <div className="text-sm font-semibold text-foreground">置信区间明细 - {point.remainingTime}秒</div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/75 bg-white text-muted-foreground transition hover:text-foreground"
-        >
-          <X size={15} />
-        </button>
+        <div className="text-sm font-semibold text-foreground">置信区间明细 - 距离接地 {point.remainingTime} 秒</div>
       </div>
 
       <div className="mt-3 grid gap-x-5 gap-y-2 sm:grid-cols-2">
@@ -745,11 +698,47 @@ function ConfidenceDetailTable({ point, onClose }: { point: ChartPoint; onClose:
   );
 }
 
-const averageDimensionLabels: Record<AverageDimension, string> = {
-  season: '季',
-  month: '月',
-  week: '周',
-};
+function AgentAnalysisPanel({ items }: { items: string[] }) {
+  return (
+    <section className="mt-4 rounded-[18px] border border-accent/15 bg-[#f7faf8] p-4">
+      <div className="flex items-center gap-2.5">
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-accent/15 bg-white text-accent shadow-sm">
+          <Bot size={18} strokeWidth={2} />
+        </span>
+        <h3 className="text-base font-bold leading-tight text-foreground">Agent 分析结果</h3>
+      </div>
+
+      <div className="mt-3 rounded-[16px] border border-border/65 bg-white/82 px-4 py-3 text-sm leading-6 text-slate-700">
+        {items.map((item, index) => (
+          <p key={item} className="mt-2 first:mt-0">
+            <span className="mr-2 font-semibold text-accent">{index + 1}.</span>
+            {item}
+          </p>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function buildAgentAnalysisItems(points: ChartPoint[], riskSummary: RiskSummary) {
+  const highest = riskSummary.highestPoint;
+  const mediumRiskPoints = points.filter((point) => point.riskCategory === 'medium');
+  const highRiskPoints = points.filter((point) => point.riskCategory === 'high');
+  const firstMedium = mediumRiskPoints[0];
+  const maxWindAngle = points.reduce((max, point) => (Math.abs(point.windDirection) > Math.abs(max.windDirection) ? point : max), points[0]);
+
+  // Extension point: replace this fixed/demo summarizer with a real LLM API call when backend credentials and review flow are available.
+  return [
+    `风扰指数峰值出现在接地前 ${highest.remainingTime} 秒附近，属于进近末段较敏感窗口；建议结合该时段操纵输入、姿态变化、阵风记录和自动油门/人工修正状态做复盘。`,
+    highRiskPoints.length
+      ? `样本曲线存在超过月均上 2σ 的片段，提示该次进近相对历史月度基准偏高；不宜直接判定安全事件，但建议纳入飞行品质监控复核清单。`
+      : `样本曲线未持续超过月均上 2σ，整体未呈现显著越界特征；但峰值段仍建议与同机场、同季节、相近风况样本进行横向比对。`,
+    `风向与机头夹角最大约 ${Math.round(maxWindAngle.windDirection)}°，提示接地前风场方向变化可能增加操纵修正需求；建议重点核对侧风分量、跑道方向和飞行员操纵响应是否同步变化。`,
+    firstMedium
+      ? `95%置信区间上界在接地前 ${firstMedium.remainingTime} 秒附近提示潜在中风险，说明该阶段不确定性上沿需要关注；可作为后续样本筛查和阈值复核的参考点。`
+      : `95%置信区间上界未明显触发中风险提示，说明当前示例的统计上沿相对稳定；可作为后续同航段样本比对中的参考基线。`,
+  ];
+}
 
 const chartRiskMeta: Record<ChartRiskCategory, { label: string; stroke: string; pillClass: string }> = {
   low: {

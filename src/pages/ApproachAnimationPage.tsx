@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, LogOut, RefreshCw } from 'lucide-react';
+import { ArrowLeft, LogOut } from 'lucide-react';
 import ApproachChart from '../components/approach/ApproachChart';
+import BrandLogos from '../components/BrandLogos';
 import type { AverageDimension, TimeRange } from '../components/approach/approachAnalysisTypes';
 import FileUploadPanel from '../components/approach/FileUploadPanel';
 import FlightStatusPanel from '../components/approach/FlightStatusPanel';
@@ -142,11 +143,9 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
   return (
     <div className="min-h-screen px-4 pb-10 pt-4 sm:px-6 lg:px-8">
       <header className="glass-nav mx-auto flex max-w-[1680px] flex-col gap-3 px-4 py-3 sm:px-5 md:flex-row md:items-center md:justify-between">
-        <div className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-accent/20 bg-accent/10">
-          <span className="h-2.5 w-2.5 rounded-full bg-accent" />
-        </div>
+        <BrandLogos />
 
-        <div className="text-sm font-semibold text-foreground sm:text-base">单次航班进近降落风扰分析</div>
+        <div className="text-2xl font-bold leading-tight text-foreground sm:text-3xl lg:text-4xl">单次航班进近降落风扰分析</div>
 
         <div className="flex flex-wrap items-center justify-center gap-2 md:justify-end">
           <a href="/" className="action-secondary">
@@ -161,25 +160,6 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
       </header>
 
       <main className="mx-auto mt-8 max-w-[1680px]">
-        <section className="surface-card px-6 py-7 sm:px-8">
-          <div className="flex flex-col gap-4">
-            <h1 className="text-3xl font-bold leading-tight text-foreground sm:text-4xl lg:text-[3.1rem]">单次航班进近降落风扰分析</h1>
-
-            {isAnalysisStarted && analysisMeta && analysisMeta.sourceLabel !== exampleApproachMeta.label && (
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-white/82 px-4 py-2 text-sm text-muted-foreground">
-                  <span>{analysisMeta.sourceLabel}</span>
-                  <span className="font-semibold text-foreground">{uploadedRowCount} 行</span>
-                </div>
-                <button type="button" onClick={handleResetUpload} className="action-secondary h-10">
-                  <RefreshCw size={15} />
-                  重新上传
-                </button>
-              </div>
-            )}
-          </div>
-        </section>
-
         {(!isAnalysisStarted || analysisMeta?.sourceLabel === exampleApproachMeta.label) && (
           <FileUploadPanel
             onFileSelect={handleFileSelect}
@@ -195,7 +175,7 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
         )}
 
         {isAnalysisStarted && (
-          <section className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(300px,0.31fr)_minmax(0,0.69fr)] xl:gap-8">
+          <section className="mt-6 grid items-stretch gap-5 lg:grid-cols-[minmax(230px,0.2fr)_minmax(0,0.8fr)]">
             {fallbackPoint && analysisMeta && (
               <FlightStatusPanel
                 point={currentPoint ?? fallbackPoint}
@@ -225,7 +205,7 @@ function ApproachAnimationPage({ onLogout }: ApproachAnimationPageProps) {
 
         <section className="mt-6 rounded-[28px] border border-amber-300/70 bg-amber-50/90 px-5 py-5 shadow-sm">
           <p className="text-sm leading-7 text-slate-700 sm:text-[15px]">
-            当前页面为科研展示 Demo。示例数据、上传后派生的风向风速与置信区间均用于前端演示，不作为实际飞行安全决策依据。
+            当前页面为科研展示 Demo。示例数据、上传后派生的风向风速与95%置信区间均用于前端演示，不作为实际飞行安全决策依据。
           </p>
         </section>
       </main>

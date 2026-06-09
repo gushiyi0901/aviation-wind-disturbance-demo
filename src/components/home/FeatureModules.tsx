@@ -66,9 +66,9 @@ function FeatureModules({ compact = false }: FeatureModulesProps) {
             <FeatureRow
               id="analysis-module"
               icon={<BarChart3 size={22} />}
-              title="运行事件关联与归因分析"
-              description="把风扰指数与降落事件放在同一分析视图中，用于识别重点机场，并辅助讨论可能的影响因素。"
-              future="事件对比 · 象限分析 · 风险归因"
+              title="运行风险关联与归因分析"
+              description="把风扰指数与降落风险表现放在同一分析视图中，用于识别重点机场，并辅助讨论可能的影响因素。"
+              future="风险对比 · 象限分析 · 风险归因"
               actionHref="/event-analysis"
               actionLabel="进入关联分析"
               preview={<AnalysisPreview />}
@@ -266,17 +266,17 @@ function AnalysisPreview() {
     <div className="preview-shell">
       <div className="rounded-[24px] border border-border/70 bg-white/80 p-4">
         <div className="mb-3 flex items-center justify-between text-sm font-semibold text-foreground">
-          <span>指数 - 事件散点象限图</span>
-          <span className="text-xs text-muted-foreground">机场平均风扰指数 / 降落事件数</span>
+          <span>指数 - 风险散点象限图</span>
+          <span className="text-xs text-muted-foreground">机场平均风扰指数 / 降落风险数</span>
         </div>
 
         <div className="relative h-40 rounded-[20px] bg-[#f9f4ec]">
           <div className="absolute inset-x-5 top-1/2 border-t border-dashed border-border" />
           <div className="absolute inset-y-4 left-1/2 border-l border-dashed border-border" />
-          <div className="absolute left-4 top-4 text-[10px] font-medium text-muted-foreground">低指数 / 高事件</div>
-          <div className="absolute right-4 top-4 text-right text-[10px] font-medium text-muted-foreground">高指数 / 高事件</div>
-          <div className="absolute bottom-3 left-4 text-[10px] font-medium text-muted-foreground">低指数 / 低事件</div>
-          <div className="absolute bottom-3 right-4 text-right text-[10px] font-medium text-muted-foreground">高指数 / 低事件</div>
+          <div className="absolute left-4 top-4 text-[10px] font-medium text-muted-foreground">低指数 / 高风险</div>
+          <div className="absolute right-4 top-4 text-right text-[10px] font-medium text-muted-foreground">高指数 / 高风险</div>
+          <div className="absolute bottom-3 left-4 text-[10px] font-medium text-muted-foreground">低指数 / 低风险</div>
+          <div className="absolute bottom-3 right-4 text-right text-[10px] font-medium text-muted-foreground">高指数 / 低风险</div>
           {scatterPoints.map((point) => (
             <div
               key={point.name}

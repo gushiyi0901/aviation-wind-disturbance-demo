@@ -51,27 +51,26 @@ function EventDailyTimeline({ airport, year, month, data }: EventDailyTimelinePr
     <section className="surface-card h-full p-5 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="section-kicker bg-white/70">月度事件时序</div>
-          <h2 className="mt-4 text-2xl font-bold text-foreground">日降落事件数时序图</h2>
+          <h2 className="text-2xl font-bold text-foreground">日降落风险数时序图</h2>
         </div>
-        <div className="text-sm text-muted-foreground">
+        <div className="text-base font-bold text-[#26362d] sm:text-lg">
           {airport.name} / {monthLabel}
         </div>
       </div>
 
-      <div className="relative mt-6 rounded-[30px] border border-border/75 bg-white/88 p-4 sm:p-5">
-        <div className="pointer-events-none absolute right-6 top-5 z-10 inline-flex items-center gap-2 rounded-full border border-border/70 bg-white/90 px-3 py-1.5 text-sm font-semibold text-muted-foreground shadow-sm">
+      <div className="relative mt-5 rounded-[30px] border border-border/75 bg-white/95 p-4 shadow-sm sm:p-5">
+        <div className="pointer-events-none absolute right-6 top-5 z-10 inline-flex items-center gap-2 rounded-full border border-border/70 bg-white px-3 py-1.5 text-sm font-semibold text-[#26362d] shadow-sm">
           <span className="h-3 w-8 rounded-full bg-[#5c7c6c]" />
-          每日降落事件数
+          每日降落风险数
         </div>
 
-        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="h-[390px] w-full xl:h-[470px]" role="img" aria-label={`${monthLabel}${airport.name}每日降落事件数`}>
+        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="h-[390px] w-full xl:h-[470px]" role="img" aria-label={`${monthLabel}${airport.name}每日降落风险数`}>
           {yTicks.map((tick) => {
             const y = HEIGHT - MARGIN.bottom - (tick / Math.max(yAxisMax, 1)) * innerHeight;
             return (
               <g key={tick}>
                 <line x1={MARGIN.left} x2={WIDTH - MARGIN.right} y1={y} y2={y} stroke="#d8cdbb" strokeDasharray="4 6" />
-                <text x={MARGIN.left - 16} y={y + 4} textAnchor="end" fontSize="13" fill="#6d756e">
+                <text x={MARGIN.left - 16} y={y + 4} textAnchor="end" fontSize="15" fill="#3f4d43">
                   {tick}
                 </text>
               </g>
@@ -81,7 +80,7 @@ function EventDailyTimeline({ airport, year, month, data }: EventDailyTimelinePr
           {visibleDays.map((day) => {
             const x = MARGIN.left + (day - 1) * dayStep + dayStep / 2;
             return (
-              <text key={day} x={x} y={HEIGHT - 28} textAnchor="middle" fontSize="13" fill="#6d756e">
+              <text key={day} x={x} y={HEIGHT - 28} textAnchor="middle" fontSize="15" fill="#3f4d43">
                 {day}
               </text>
             );
@@ -110,14 +109,14 @@ function EventDailyTimeline({ airport, year, month, data }: EventDailyTimelinePr
             x={24}
             y={(MARGIN.top + HEIGHT - MARGIN.bottom) / 2}
             textAnchor="middle"
-            fontSize="14"
+            fontSize="18"
             fontWeight="700"
-            fill="#2f493b"
+            fill="#203129"
             transform={`rotate(-90 24 ${(MARGIN.top + HEIGHT - MARGIN.bottom) / 2})`}
           >
-            事件数
+            风险数
           </text>
-          <text x={(MARGIN.left + WIDTH - MARGIN.right) / 2} y={HEIGHT - 6} textAnchor="middle" fontSize="14" fontWeight="700" fill="#2f493b">
+          <text x={(MARGIN.left + WIDTH - MARGIN.right) / 2} y={HEIGHT - 6} textAnchor="middle" fontSize="18" fontWeight="700" fill="#203129">
             日期（日）
           </text>
         </svg>
@@ -129,7 +128,7 @@ function EventDailyTimeline({ airport, year, month, data }: EventDailyTimelinePr
               {hoveredPoint.day}日
             </div>
             <div className="mt-2 text-muted-foreground">
-              降落事件数：<span className="font-semibold text-foreground">{hoveredPoint.count}</span>
+              降落风险数：<span className="font-semibold text-foreground">{hoveredPoint.count}</span>
             </div>
           </div>
         )}

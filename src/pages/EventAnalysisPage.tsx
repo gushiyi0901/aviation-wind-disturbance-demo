@@ -3,6 +3,7 @@ import { ArrowLeft, ChevronDown, LogOut } from 'lucide-react';
 import EventDailyTimeline from '../components/event-analysis/EventDailyTimeline';
 import EventScatterPlot from '../components/event-analysis/EventScatterPlot';
 import EventSummaryPanel from '../components/event-analysis/EventSummaryPanel';
+import BrandLogos from '../components/BrandLogos';
 import {
   defaultEventAirportId,
   eventAnalysisAirports,
@@ -41,11 +42,9 @@ function EventAnalysisPage({ onLogout }: EventAnalysisPageProps) {
   return (
     <div className="min-h-screen px-4 pb-10 pt-4 sm:px-6 lg:px-8">
       <header className="glass-nav mx-auto flex max-w-[1680px] flex-col gap-3 px-4 py-3 sm:px-5 md:flex-row md:items-center md:justify-between">
-        <div className="inline-flex h-10 items-center rounded-full border border-accent/20 bg-accent/10 px-3 text-sm font-semibold text-accent">
-          操纵响应风扰指数
-        </div>
+        <BrandLogos />
 
-        <div className="text-sm font-semibold text-foreground sm:text-base">运行事件关联与归因分析</div>
+        <div className="text-xl font-bold leading-tight text-foreground sm:text-2xl lg:text-3xl">运行风险关联与归因分析</div>
 
         <div className="flex flex-wrap items-center justify-center gap-2 md:justify-end">
           <a href="/" className="action-secondary">
@@ -59,12 +58,8 @@ function EventAnalysisPage({ onLogout }: EventAnalysisPageProps) {
         </div>
       </header>
 
-      <main className="mx-auto mt-8 max-w-[1680px]">
-        <section className="surface-card px-6 py-7 sm:px-8">
-          <h1 className="text-3xl font-bold leading-tight sm:text-4xl lg:text-[3.15rem]">运行事件关联与归因分析</h1>
-        </section>
-
-        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(420px,0.4fr)_minmax(0,0.6fr)]">
+      <main className="mx-auto mt-5 max-w-[1680px]">
+        <section className="grid gap-6 xl:grid-cols-[minmax(420px,0.4fr)_minmax(0,0.6fr)]">
           <EventSummaryPanel
             airports={eventAnalysisAirports}
             airport={selectedAirport}
@@ -102,7 +97,7 @@ function EventAnalysisPage({ onLogout }: EventAnalysisPageProps) {
 
         <section className="mt-6 rounded-[28px] border border-amber-300/70 bg-amber-50/90 px-5 py-5 shadow-sm">
           <p className="text-sm leading-7 text-slate-700 sm:text-[15px]">
-            本页面为科研成果演示 Demo，当前机场事件、风扰指数与归因数据均为模拟数据或脱敏样例数据，结果仅用于项目交流、方法展示与可视化说明，不作为实际飞行安全决策依据。
+            本页面为科研成果演示 Demo，当前机场风险表现、风扰指数与归因数据均为模拟数据或脱敏样例数据，结果仅用于项目交流、方法展示与可视化说明，不作为实际飞行安全决策依据。
           </p>
         </section>
       </main>
@@ -154,11 +149,11 @@ function AuxiliaryMetrics({
         </div>
       </div>
 
-      <h2 className="mt-5 text-2xl font-bold leading-tight text-foreground">{monthLabel}{airport.name}指数 - 事件指标</h2>
+      <h2 className="mt-5 text-2xl font-bold leading-tight text-foreground">{monthLabel}{airport.name}指数 - 风险指标</h2>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
         <MetricTile label="平均风扰指数" value={formatWindDisturbanceIndex(airport.averageIndex)} />
-        <MetricTile label="降落事件数" value={String(airport.eventCount)} />
+        <MetricTile label="降落风险数" value={String(airport.eventCount)} />
         <MetricTile label="相关性评分" value={airport.correlationScore.toFixed(2)} />
       </div>
     </section>
@@ -168,8 +163,8 @@ function AuxiliaryMetrics({
 function MetricTile({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[20px] border border-border/70 bg-white/85 p-3.5">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-2 text-sm font-semibold leading-6 text-foreground">{value}</div>
+      <div className="text-sm font-semibold text-muted-foreground">{label}</div>
+      <div className="mt-2 text-lg font-bold leading-7 text-foreground">{value}</div>
     </div>
   );
 }
