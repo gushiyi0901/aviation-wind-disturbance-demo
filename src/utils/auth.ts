@@ -14,7 +14,10 @@ export type MockAuthSession = {
 
 const AUTH_STORAGE_KEY = 'approach-risk-demo-auth';
 const DEMO_ACCOUNTS_STORAGE_KEY = 'demoAccounts';
-const DEFAULT_DEMO_ACCOUNTS: DemoAccount[] = [{ username: 'fangfang', password: '123456' }];
+const DEFAULT_DEMO_ACCOUNTS: DemoAccount[] = [
+  { username: 'fangfang', password: '123456' },
+  { username: 'zyecnu', password: '123456' },
+];
 
 export function getMockAuthSession(): MockAuthSession | null {
   if (typeof window === 'undefined') {
