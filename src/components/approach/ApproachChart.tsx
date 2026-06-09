@@ -683,7 +683,7 @@ function ConfidenceDetailTable({ point }: { point: ChartPoint }) {
   return (
     <div className="-mt-3 rounded-[18px] border border-border/75 bg-white/92 p-3.5">
       <div className="flex items-center justify-between gap-4">
-        <div className="text-sm font-semibold text-foreground">置信区间明细 - 距离接地 {point.remainingTime} 秒</div>
+        <div className="text-sm font-semibold text-foreground">95%置信区间明细 - 距离接地 {point.remainingTime} 秒</div>
       </div>
 
       <div className="mt-3 grid gap-x-5 gap-y-2 sm:grid-cols-2">
@@ -735,8 +735,8 @@ function buildAgentAnalysisItems(points: ChartPoint[], riskSummary: RiskSummary)
       : `样本曲线未持续超过月均上 2σ，整体未呈现显著越界特征；但峰值段仍建议与同机场、同季节、相近风况样本进行横向比对。`,
     `风向与机头夹角最大约 ${Math.round(maxWindAngle.windDirection)}°，提示接地前风场方向变化可能增加操纵修正需求；建议重点核对侧风分量、跑道方向和飞行员操纵响应是否同步变化。`,
     firstMedium
-      ? `95%置信区间上界在接地前 ${firstMedium.remainingTime} 秒附近提示潜在中风险，说明该阶段不确定性上沿需要关注；可作为后续样本筛查和阈值复核的参考点。`
-      : `95%置信区间上界未明显触发中风险提示，说明当前示例的统计上沿相对稳定；可作为后续同航段样本比对中的参考基线。`,
+      ? `95%置信区间上界在接地前 ${firstMedium.remainingTime} 秒附近提示潜在中风险，说明该阶段不确定性上沿需要关注；可作为同航段样本筛查和阈值复核的参考点。`
+      : `95%置信区间上界未明显触发中风险提示，说明该航段统计上沿相对稳定；可作为同航段样本比对中的参考基线。`,
   ];
 }
 

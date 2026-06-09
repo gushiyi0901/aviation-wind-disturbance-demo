@@ -32,13 +32,13 @@ function HeroSection() {
     <section id="overview" className="px-4 pb-14 pt-8 sm:px-6 sm:pt-10 lg:px-8 lg:pb-16 lg:pt-10">
       <div className="mx-auto flex max-w-[1360px] flex-col items-center">
         <div className="w-full">
-          <div className="mx-auto max-w-5xl rounded-[34px] border border-white/85 bg-white/80 px-5 py-7 text-center shadow-soft backdrop-blur-xl sm:px-8 lg:px-10">
-            <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-full border border-accent/20 bg-accent/10 text-accent shadow-[0_8px_20px_rgba(255,255,255,0.18),0_2px_6px_rgba(92,124,108,0.08)] ring-1 ring-white/65">
+          <div className="mx-auto max-w-5xl rounded-[34px] border border-white/85 bg-white/80 px-5 py-5 text-center shadow-soft backdrop-blur-xl sm:px-8 lg:px-10">
+            <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-accent/20 bg-accent/10 text-accent shadow-[0_8px_20px_rgba(255,255,255,0.18),0_2px_6px_rgba(92,124,108,0.08)] ring-1 ring-white/65">
               <Plane size={20} strokeWidth={2} />
             </div>
 
-            <h1 className="mx-auto flex flex-col items-center gap-4">
-              <span className="flex flex-col gap-2 text-[2rem] font-extrabold leading-[1.08] text-foreground sm:text-[2.625rem] lg:text-[3.5rem]">
+            <h1 className="mx-auto flex flex-col items-center gap-3">
+              <span className="flex flex-col gap-1.5 text-[1.75rem] font-extrabold leading-[1.08] text-foreground sm:text-[2.25rem] lg:text-[3rem]">
                 <span>操纵响应风扰指数</span>
                 <span>智能展示平台</span>
               </span>
@@ -46,7 +46,7 @@ function HeroSection() {
                 Pilot-Response Wind Disturbance Index (PWDI)
               </span>
             </h1>
-            <p className="mx-auto mt-6 max-w-3xl text-lg font-medium leading-8 text-[#24382f] sm:text-xl">
+            <p className="mx-auto mt-4 max-w-3xl text-lg font-medium leading-8 text-[#24382f] sm:text-xl">
               基于飞行员操纵响应，展示进近与着陆阶段风扰影响程度的可视化分析平台
             </p>
           </div>

@@ -528,8 +528,8 @@ function buildAgentAnalysisItems(monthLabel: string, summaries: AirportSummary[]
     return [
       `${monthLabel}，${summary.airport.city}${summary.airport.shortName}月均风扰指数为 ${formatWindDisturbanceIndex(summary.average)}，整体处于${averageState}状态；峰值出现在${summary.peakDay}日前后，建议把这几天的跑道方向、低空风场记录和进近排序放在一起复核。`,
       `${intervalNote} 当前结果不宜直接作为安全结论，但能帮助筛出更值得回看的日期，尤其是曲线上界接近正常上沿或峰值连续出现的时段。`,
-      `本月波动幅度约 ${summary.range.toFixed(2)}，如果后续真实数据仍呈现类似节奏，可把该机场纳入月度飞行品质监控的对照样本，重点观察风向摆动与流量叠加时是否伴随指数抬升。`,
-      `建议结合后续真实数据验证：一方面比较同机场前后月份的均值和置信区间，另一方面回看峰值日前后的机组操纵响应，避免只凭单日曲线高点做判断。`,
+      `本月波动幅度约 ${summary.range.toFixed(2)}，可把该机场纳入月度飞行品质监控的对照样本，重点观察风向摆动与流量叠加时是否伴随指数抬升。`,
+      `复盘时建议同时比较同机场前后月份的均值和置信区间，并回看峰值日前后的机组操纵响应，避免只凭单日曲线高点做判断。`,
     ];
   }
 
@@ -540,10 +540,10 @@ function buildAgentAnalysisItems(monthLabel: string, summaries: AirportSummary[]
 
   // Extension point: replace this fixed/demo summarizer with a real LLM API call when backend credentials and review flow are available.
   return [
-    `${monthLabel}，${higher.airport.city}${higher.airport.shortName}月均风扰指数为 ${formatWindDisturbanceIndex(higher.average)}，高于${lower.airport.city}${lower.airport.shortName}的 ${formatWindDisturbanceIndex(lower.average)}，差值约 ${delta.toFixed(2)}；该差异提示两机场本月风扰水平存在可比对空间，但仍需结合真实运行样本验证。`,
+    `${monthLabel}，${higher.airport.city}${higher.airport.shortName}月均风扰指数为 ${formatWindDisturbanceIndex(higher.average)}，高于${lower.airport.city}${lower.airport.shortName}的 ${formatWindDisturbanceIndex(lower.average)}，差值约 ${delta.toFixed(2)}；该差异提示两机场本月风扰水平存在可比对空间，适合进入同月横向复盘。`,
     `波动幅度上，${higher.airport.city}${higher.airport.shortName}约为 ${higher.range.toFixed(2)}，${lower.airport.city}${lower.airport.shortName}约为 ${lower.range.toFixed(2)}。若置信区间在峰值附近同步变宽，可优先回看该机场对应日期的进近批次、跑道使用方向和低空风场记录。`,
     `风险时段并不完全重合：${higher.airport.city}${higher.airport.shortName}峰值在${higher.peakDay}日前后，${lower.airport.city}${lower.airport.shortName}峰值在${lower.peakDay}日前后。对比复盘时不建议只看月均值，更适合按日期拆开看天气过程和运行压力。`,
-    `复盘侧重点可以分开：月均较高的一侧关注持续性扰动和上界抬升，月均较低但峰值突出的机场关注短时波动。当前为 mock 分析，建议后续接入真实数据后再验证这些线索是否稳定。`,
+    `复盘侧重点可以分开：月均较高的一侧关注持续性扰动和上界抬升，月均较低但峰值突出的机场关注短时波动，并结合航班批次、跑道方向和天气过程判断线索是否稳定。`,
   ];
 }
 

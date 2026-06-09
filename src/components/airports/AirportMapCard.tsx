@@ -53,7 +53,7 @@ function AirportMapCard({ airports, selectedAirportId, onSelect }: AirportMapCar
         <div className="relative mx-auto aspect-[25/15] min-h-[360px] w-full max-w-[1120px] lg:min-h-[400px]">
           <svg
             viewBox={`0 0 ${chinaMapViewBox.width} ${chinaMapViewBox.height}`}
-            className="absolute inset-0 h-full w-full -translate-x-[76px] -translate-y-2 scale-[1.14]"
+            className="absolute inset-0 h-full w-full -translate-x-[76px] translate-y-3 scale-[1.14]"
             preserveAspectRatio="xMidYMid meet"
             aria-label="中国机场月平均风扰指数矢量地图"
           >

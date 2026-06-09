@@ -4,7 +4,7 @@ function ValueSection() {
       <div className="mx-auto max-w-[1680px]">
         <div className="value-band">
           <div className="max-w-3xl">
-            <div className="section-kicker bg-white/70">团队介绍&价值说明</div>
+            <div className="section-kicker bg-white/70">价值说明</div>
           </div>
         </div>
       </div>
