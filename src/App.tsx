@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import appBackground from './assets/approach-bg.jpg';
+import appBackground from './assets/comac-aircraft-bg.jpg';
 import HomePage from './pages/HomePage';
 import ApproachAnimationPage from './pages/ApproachAnimationPage';
 import AirportRiskPage from './pages/AirportRiskPage';
@@ -43,12 +43,13 @@ function App() {
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           transform: isAuthenticated ? 'scale(1.02)' : 'none',
+          filter: 'brightness(0.82) contrast(1.04) saturate(1.05)',
         }}
       />
       {isAuthenticated && (
         <>
-          <div className="fixed inset-0 -z-20 bg-[linear-gradient(180deg,rgba(245,239,230,0.34),rgba(245,239,230,0.48)),radial-gradient(circle_at_top_left,rgba(92,124,108,0.14),transparent_24rem),radial-gradient(circle_at_85%_10%,rgba(181,107,74,0.12),transparent_20rem)]" />
-          <div className="fixed inset-0 -z-10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.12))]" />
+          <div className="fixed inset-0 -z-20 bg-[linear-gradient(180deg,rgba(10,42,82,0.24),rgba(5,24,52,0.34)),radial-gradient(circle_at_top_left,rgba(34,91,150,0.16),transparent_24rem),radial-gradient(circle_at_85%_10%,rgba(20,66,126,0.14),transparent_20rem)] mix-blend-multiply" />
+          <div className="fixed inset-0 -z-10 bg-[linear-gradient(180deg,rgba(235,246,255,0.06),rgba(188,214,244,0.10))]" />
         </>
       )}
 
