@@ -3,7 +3,7 @@ import BrandLogos from '../BrandLogos';
 
 const navItems = [
   { label: '项目概览', href: '#overview' },
-  { label: '价值说明', href: '/team' },
+  { label: '团队介绍', href: '/team' },
 ];
 
 const featureItems = [

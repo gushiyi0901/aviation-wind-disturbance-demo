@@ -42,7 +42,7 @@ function LoginPage({ onLoginSuccess }: LoginPageProps) {
         <div className="surface-panel px-6 py-7 text-center sm:px-8 lg:px-10 lg:py-10 lg:text-left">
           <h1 className="flex flex-col text-[2.35rem] font-bold leading-[1.12] text-foreground sm:text-[3rem] lg:text-[3.55rem]">
             <span>操纵响应风扰指数</span>
-            <span className="text-[#465d54]">智能展示平台</span>
+            <span className="text-[#465d54]">可视化分析平台</span>
           </h1>
           <div className="mx-auto mt-4 inline-flex rounded-full border border-white/80 bg-white/76 px-5 py-2 text-sm font-semibold tracking-[0.04em] text-[#3f584d] shadow-soft backdrop-blur-md sm:text-base lg:mx-0">
             Pilot-Response Wind Disturbance Index (PWDI)
