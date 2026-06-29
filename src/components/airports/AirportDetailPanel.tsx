@@ -92,7 +92,7 @@ function AirportDetailPanel({ airports, airport, selectedAirportId, onSelect }: 
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <MetricTile label="主导风向" value={airport.mainWindDirection} icon={<Compass size={15} />} />
-        <MetricTile label="参考" value={`${airport.windSpeed} kt`} icon={<Waves size={15} />} />
+        <MetricTile label="风速" value={`${airport.windSpeed} kt`} icon={<Waves size={15} />} />
       </div>
 
       <div className="mt-2.5 rounded-[22px] border border-border/75 bg-white/85 p-3">
